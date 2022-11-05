@@ -1,8 +1,19 @@
-/// `CONTACT` Property : used to represent contact information or alternately a reference to contact information associated with the calendar component.
-pub struct Contact {}
+use crate::untested_property;
 
-/// `ORGANIZER` Property : defines the organizer for a calendar component..
-pub struct Organizer {}
+untested_property!(
+    Contact,
+    "CONTACT",
+    "used to represent contact information or alternately a reference to contact information associated with the calendar component."
+);
 
-/// `ATTENDEE` Property : defines an 'Attendee' within a calendar component.
-pub struct Attendee {}
+untested_property!(
+    Organizer,
+    "CONTACT",
+    "defines the organizer for a calendar component."
+);
+
+untested_property!(
+    Attendee,
+    "ATTENDEE",
+    "defines an 'Attendee' within a calendar component."
+);

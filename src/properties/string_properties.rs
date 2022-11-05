@@ -1,3 +1,5 @@
+use crate::untested_property;
+
 // Creation and conversion from builder types to Property
 macro_rules! string_property {
     ($type:ident, $name:expr, $description:expr) => {
@@ -85,26 +87,50 @@ string_property!(
     "used to represent a relationship or reference between one calendar component and another."
 );
 
-/// `CALSCALE` Property : defines the calendar scale used for the calendar information specified in the iCalendar object. The Gregorian calendar scale is assumed if this property is not specified in the iCalendar object.
-pub struct CalScale {} // Need to be defined more specifically as this has specific possibilities
+untested_property!(
+    CalScale,
+    "CALSCALE",
+    "defines the calendar scale used for the calendar information specified in the iCalendar object. The Gregorian calendar scale is assumed if this property is not specified in the iCalendar object."
+);
 
-/// `ACTION` Property : defines the action to be invoked when an alarm is triggered.
-pub struct Action {} // Need to be defined more specifically as this has specific possibilities
+untested_property!(
+    Action,
+    "ACTION",
+    "defines the action to be invoked when an alarm is triggered."
+);
 
-/// `VERSION`Property : specifies the identifier corresponding to the highest version number or the minimum and maximum range of the iCalendar specification that is required in order to interpret the iCalendar object.
-pub struct Version {} // Need to be defined more specifically as this needs specific parsing for validity
+untested_property!(
+    Version,
+    "VERSION",
+    "specifies the identifier corresponding to the highest version number or the minimum and maximum range of the iCalendar specification that is required in order to interpret the iCalendar object."
+);
 
-/// `CATEGORIES` Property : defines the categories for a calendar component.
-pub struct Categories {} // Need to be defined more specifically as this needs string lists
+untested_property!(
+    Categories,
+    "VERSION",
+    "defines the categories for a calendar component."
+);
 
-/// `CLASS` Property : defines the access classification for a calendar component. "PUBLIC" (default) / "PRIVATE" / "CONFIDENTIAL" / iana-token / x-name
-pub struct Class {} // Need to be defined more specifically as this needs string lists
+untested_property!(
+    Class,
+    "CLASS",
+    "defines the access classification for a calendar component. 'PUBLIC' (default) / 'PRIVATE' / 'CONFIDENTIAL' / iana-token / x-name"
+);
 
-/// `RESOURCE` Property : defines the equipment or resources anticipated for an activity specified by a calendar entity.
-pub struct Resource {} // Need to be defined more specifically as this needs string lists
+untested_property!(
+    Resource,
+    "RESOURCE",
+    "defines the equipment or resources anticipated for an activity specified by a calendar entity."
+);
 
-/// `RESOURCE` Property : defines the overall status or confirmation for the calendar component.
-pub struct Status {} // Need to be defined more specifically as this is specific for different types of event
+untested_property!(
+    Status,
+    "RESOURCE",
+    "defines the overall status or confirmation for the calendar component."
+);
 
-/// `TRANSP` Property : defines whether an event is transparent or not to busy time searches. Valid values : OPAQUE, TRANSPARENT.
-pub struct Transp {} // Need to be defined more specifically as this is specific for different types of event
+untested_property!(
+    Transp,
+    "TRANSP",
+    "defines whether an event is transparent or not to busy time searches. Valid values : OPAQUE, TRANSPARENT."
+);

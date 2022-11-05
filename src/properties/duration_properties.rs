@@ -1,2 +1,3 @@
-/// `DURATION` Properti : specifies a positive duration of time.
-pub struct Duration {} // We'll see if this is worth a macro
+use crate::untested_property;
+
+untested_property!(DURATION, "GEO", "specifies a positive duration of time.");

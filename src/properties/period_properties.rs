@@ -1,2 +1,7 @@
-/// `FREEBUSY` Property : defines one or more free or busy time intervals.
-pub struct Duration {} // We'll see if this is worth a macro
+use crate::untested_property;
+
+untested_property!(
+    FreeBusy,
+    "FREEBUSY",
+    "defines one or more free or busy time intervals."
+);

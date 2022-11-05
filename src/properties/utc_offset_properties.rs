@@ -1,5 +1,13 @@
-/// `TZOFFSETTO` Property : This property specifies the offset which is in use in this time zone observance.
-pub struct TZOffsetTo {}
+use crate::untested_property;
 
-/// `TZOFFSETFROM` Property : This property specifies the offset which is in use in this time zone observance.
-pub struct TZOffsetFrom {}
+untested_property!(
+    TZOffsetTo,
+    "TZOFFSETTO",
+    "specifies the offset which is in use in this time zone observance."
+);
+
+untested_property!(
+    TZOffsetFrom,
+    "TZOFFSETFROM",
+    "specifies the offset which is in use in this time zone observance."
+);

@@ -1,3 +1,4 @@
+use crate::untested_property;
 use chrono::{DateTime, Utc};
 
 // Creation and conversion from builder types to Property
@@ -109,7 +110,7 @@ date_time_property_with_list!(
     "defines the list of date/time exceptions for a recurring calendar component."
 );
 
-date_time_property_with_list!(
+untested_property!(
     RDate,
     "RDATE",
     "defines the list of date/times for a recurrence set."
