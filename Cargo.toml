@@ -1,5 +1,5 @@
 [package]
-name = "ics-rs"
+name = "ical"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,5 +7,10 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.22"
-ical = "0.7.0"
 time = "0.3.16"
+
+[lib]
+doc = true
+name = "ical"
+path = "src/lib.rs"
+test = true

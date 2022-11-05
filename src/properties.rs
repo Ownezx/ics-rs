@@ -7,7 +7,6 @@ pub mod string_properties;
 pub mod time_properties;
 pub mod uri_properties;
 pub mod utc_offset_properties;
-pub mod vcalendar;
 
 /// Untested properties are treated as string properties
 #[macro_export]
