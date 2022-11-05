@@ -61,8 +61,35 @@ string_property!(
     "defines a short summary or subject for the calendar component."
 );
 
-/// `CALSCALE` Property : This property defines the calendar scale used for the calendar information specified in the iCalendar object. The Gregorian calendar scale is assumed if this property is not specified in the iCalendar object.
-pub struct CalScale {} // Need to be defined more specifically as this needs specific parsing
+string_property!(
+    Tzid,
+    "TZID",
+    "specifies the text value that uniquely identifies the 'VTIMEZONE' calendar component."
+);
+
+string_property!(
+    Tzname,
+    "TZID",
+    "specifies the customary designation for a time zone description."
+);
+
+string_property!(
+    Tzurl,
+    "TZURL",
+    "The TZURL provides a means for a VTIMEZONE component to point to a network location that can be used to retrieve an up-to- date version of itself."
+); // Note should be an URI property
+
+string_property!(
+    RelateedTo,
+    "RELATED-TO",
+    "used to represent a relationship or reference between one calendar component and another."
+);
+
+/// `CALSCALE` Property : defines the calendar scale used for the calendar information specified in the iCalendar object. The Gregorian calendar scale is assumed if this property is not specified in the iCalendar object.
+pub struct CalScale {} // Need to be defined more specifically as this has specific possibilities
+
+/// `ACTION` Property : defines the action to be invoked when an alarm is triggered.
+pub struct Action {} // Need to be defined more specifically as this has specific possibilities
 
 /// `VERSION`Property : specifies the identifier corresponding to the highest version number or the minimum and maximum range of the iCalendar specification that is required in order to interpret the iCalendar object.
 pub struct Version {} // Need to be defined more specifically as this needs specific parsing for validity

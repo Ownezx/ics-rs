@@ -1,0 +1,2 @@
+/// `RRULE` Property : defines a rule or repeating pattern for recurring events, to-dos, or time zone definitions.
+pub struct RRles {}

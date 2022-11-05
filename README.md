@@ -1,3 +1,9 @@
+# ics-rs
+
+## Introduction
+
+This is ispired by the ics and ical-rs crates.
+
 ## Docs
 
 https://www.kanzaki.com/docs/ical/
