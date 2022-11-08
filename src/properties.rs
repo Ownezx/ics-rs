@@ -1,58 +1,66 @@
-pub mod cal_address_properties;
-pub mod duration_properties;
-pub mod geo;
-pub mod integer_properties;
-pub mod recurrence_id;
-pub mod string_properties;
-pub mod time_properties;
-pub mod uri_properties;
-pub mod utc_offset_properties;
+pub mod cal_adress;
+pub mod class;
+pub mod status;
+pub mod uri;
 
-/// Untested properties are treated as string properties
-#[macro_export]
-macro_rules! untested_property {
-    ($type:ident, $name:expr, $description:expr) => {
-        #[doc = "`"]
-        #[doc=$name]
-        #[doc = "` Untested property : "]
-        #[doc = $description]
-        #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-        pub struct $type {
-            value: String,
-        }
+pub enum Property {
+    // Time properties
+    DTstamp,
+    Completed,
+    Created,
+    DTStart,
+    LastModification,
+    RecurrenceID,
+    ExDate,
+    RDate,
 
-        impl $type {
-            pub fn new(value: String) -> $type {
-                eprintln!("Warning, property {} is currently untested and does not validate data. Use at your own discretion", $name);
-                $type { value }
-            }
+    // String properties
+    UID,
+    Description,
+    Location,
+    Summary,
+    Comment,
+    Related,
+    Resources,
+    Categories,
 
-            pub fn to_string(&self) -> &String {
-                &self.value
-            }
-            pub fn write(&self) -> String {
-                format!("{}:{}", $name, self.value)
-            }
-        }
-    };
+    // Cal adress properties
+    Organizer,
+    Attendee,
+    Contact,
+
+    // Integer properties
+    PercentComplete,
+    Priority,
+    Sequence,
+
+    // Status,
+    Status,
+
+    // URI properties
+    URL,
+    Attach,
+
+    // Others
+    Geo,
+    Class,
 }
 
-untested_property!(
-    UID,
-    "UID",
-    "defines the persistent, globally unique identifier for the calendar component."
-);
-
-untested_property!(
-    ExRule,
-    "EXRULE",
-    "defines a rule or repeating pattern for an exception to a recurrence set."
-);
-
-untested_property!(
-    Repeat,
-    "REPEAT",
-    "defines the number of time the alarm should be repeated, after the initial trigger. (It contains an integer and duration)"
-);
-
-untested_property!(Trigger, "TRIGGER", "specifies when an alarm will trigger.");
+impl Property {
+    pub fn get_property_from_identifier(identifier: String) -> Property {
+        match identifier.as_str() {
+            "ORGANIZER" => Property::Organizer,
+            "PERCENT-COMPLETE" => Property::PercentComplete,
+            "PRIORITY" => Property::Priority,
+            "SEQUENCE" => Property::Sequence,
+            "STATUS" => Property::Status,
+            "URL" => Property::URL,
+            "ATTACH" => Property::Attach,
+            "GEO" => Property::Geo,
+            "CLASS" => Property::Class,
+            (_) => {
+                panic!("Unknown identifier")
+            }
+        }
+    }
+}

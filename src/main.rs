@@ -1,8 +1,13 @@
-use properties::time_properties::Created;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
 
-use chrono::{TimeZone, Utc};
-mod properties;
+fn main() -> std::io::Result<()> {
+    let f = File::open("log.txt")?;
+    let mut reader = BufReader::new(f);
 
-fn main() {
-    let var = Utc.ymd(2014, 7, 8).and_hms(16, 10, 11);
+    let mut line = String::new();
+    let len = reader.read_line(&mut line)?;
+    println!("First line is {len} bytes long");
+    Ok(())
 }
