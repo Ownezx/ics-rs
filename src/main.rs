@@ -2,12 +2,20 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-fn main() -> std::io::Result<()> {
-    let f = File::open("log.txt")?;
-    let mut reader = BufReader::new(f);
+use chrono::Date;
+use chrono::DateTime;
+use chrono::NaiveDateTime;
+use chrono::Utc;
 
-    let mut line = String::new();
-    let len = reader.read_line(&mut line)?;
-    println!("First line is {len} bytes long");
-    Ok(())
+fn main() {
+    use chrono::{FixedOffset, TimeZone};
+
+    let var: DateTime<FixedOffset> =
+        DateTime::from_utc(Utc::now().naive_utc(), FixedOffset::east(0));
+
+    let datetime = FixedOffset::east(0).ymd(2016, 11, 8).and_hms(0, 0, 0);
+    println!("{}", &var.format("%Y%m%dT%H%M%SZ %Z"));
+
+    let time = DateTime::parse_from_str("20221110T162749Z+00:00", "%Y%m%dT%H%M%SZ%z").unwrap();
+    println!("{}", &time.format("%Y%m%dT%H%M%SZ"));
 }
