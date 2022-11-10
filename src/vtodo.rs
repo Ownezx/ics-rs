@@ -63,47 +63,48 @@ Purpose:  Provide a grouping of calendar properties that describe a
       with each successive calendar date, until it is completed.
 */
 
+use crate::ics_error::ICSError;
 use crate::properties::class::Class;
 use crate::properties::uri::Uri;
 use crate::properties::{cal_adress::CalAdress, status::VTodoStatus};
 use chrono::{DateTime, Utc};
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Lines};
 
 pub struct VTodo {
     // Necessary variables
-    dtstamp: DateTime<Utc>,
-    uid: String,
+    pub dtstamp: DateTime<Utc>,
+    pub uid: String,
 
     // Optional and unique
-    class: Option<Class>,
-    completed: Option<DateTime<Utc>>,
-    created: Option<DateTime<Utc>>,
-    description: Option<String>,
-    dtstart: Option<DateTime<Utc>>,
-    geo: Option<(f64, f64)>,
-    last_mod: Option<DateTime<Utc>>,
-    location: Option<String>,
-    organizer: Option<CalAdress>,
-    percent: Option<isize>,
-    priority: Option<isize>,
-    recurrence_id: Option<DateTime<Utc>>,
-    sequence: Option<isize>,
-    status: Option<VTodoStatus>,
-    summary: Option<String>,
-    url: Option<Uri>,
+    pub class: Option<Class>,
+    pub completed: Option<DateTime<Utc>>,
+    pub created: Option<DateTime<Utc>>,
+    pub description: Option<String>,
+    pub dtstart: Option<DateTime<Utc>>,
+    pub geo: Option<(f64, f64)>,
+    pub last_modified: Option<DateTime<Utc>>,
+    pub location: Option<String>,
+    pub organizer: Option<CalAdress>,
+    pub percent: Option<isize>,
+    pub priority: Option<isize>,
+    pub recurrence_id: Option<DateTime<Utc>>,
+    pub sequence: Option<isize>,
+    pub status: Option<VTodoStatus>,
+    pub summary: Option<String>,
+    pub url: Option<Uri>,
 
     // Optional and several
-    attach: Vec<Uri>,
-    attendee: Vec<CalAdress>,
-    categories: Vec<String>,
-    comment: Vec<String>,
-    contact: Vec<CalAdress>,
-    exdate: Vec<DateTime<Utc>>,
+    pub attach: Vec<Uri>,
+    pub attendee: Vec<CalAdress>,
+    pub categories: Vec<String>,
+    pub comment: Vec<String>,
+    pub contact: Vec<CalAdress>,
+    pub exdate: Vec<DateTime<Utc>>,
     // rstatus: Vec<String> // Seems to be a request answer so I wont be putting it in for now.
-    related: Vec<String>,
-    resources: Vec<String>,
-    rdate: Vec<DateTime<Utc>>,
+    pub related_to: Vec<String>,
+    pub resources: Vec<String>,
+    pub rdate: Vec<DateTime<Utc>>,
     // x_prop: Will be implemented later
     // iana_prop: Will be implemented later
 }
@@ -119,7 +120,7 @@ impl VTodo {
             description: None,
             dtstart: None,
             geo: None,
-            last_mod: None,
+            last_modified: None,
             location: None,
             organizer: None,
             percent: None,
@@ -135,17 +136,38 @@ impl VTodo {
             comment: Vec::new(),
             contact: Vec::new(),
             exdate: Vec::new(),
-            related: Vec::new(),
+            related_to: Vec::new(),
             resources: Vec::new(),
             rdate: Vec::new(),
         }
     }
 
-    pub fn parse_from_bufreader(reader: BufReader<File>) -> VTodo {
+    /// Reads the content of a VTODO object. The buffer passed should already have consumed the BEGIN:VTODO.
+    pub fn parse_from_bufreader(mut lines: Lines<BufReader<File>>) -> Result<VTodo, ICSError> {
         let mut vtodo: VTodo = VTodo::new_empty(Utc::now(), "".to_string());
         let mut has_uid = false;
         let mut has_dtstamp = false;
 
-        vtodo
+        loop {
+            let line = lines.next();
+            let processed_line: String;
+            match line {
+                Some(line) => {
+                    //
+                    processed_line = line.unwrap();
+
+                    if processed_line.starts_with("END:VTODO") {
+                        break;
+                    }
+                }
+                None => return Err(ICSError::BeginWithoutEnd),
+            }
+        }
+
+        if !has_uid || !has_dtstamp {
+            return Err(ICSError::MissingNecessaryProperty);
+        }
+
+        Ok(vtodo)
     }
 }
