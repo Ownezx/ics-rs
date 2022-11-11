@@ -3,6 +3,7 @@ use std::{error::Error, fmt};
 /// This is the list of all possible errors linked to the database.
 #[derive(Debug, Clone)]
 pub enum ICSError {
+    PropertyConditionNotRespected,
     MissingNecessaryProperty,
     DuplicateUniqueProperty,
     BeginWithoutEnd,
@@ -18,6 +19,7 @@ impl fmt::Display for ICSError {
                 "Reached end of file without finding the end of current object."
             }
             ICSError::MissingNecessaryProperty => "Missing necessary property.",
+            ICSError::PropertyConditionNotRespected => "Propoerty condition not Respected.",
         };
 
         write!(f, "{}", out_str)

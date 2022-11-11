@@ -11,6 +11,6 @@ time = "0.3.16"
 
 [lib]
 doc = true
-name = "ical"
+name = "ics"
 path = "src/lib.rs"
 test = true

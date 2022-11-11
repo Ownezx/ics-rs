@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, FixedOffset, format::Fixed, Duration};
 
 use self::uri::Uri;
 
@@ -17,6 +17,7 @@ const PROPERTY_IDENTIFIER: &[&str] = &[
     "RECURRENCE-ID",
     "EXDATE",
     "RDATE",
+    "DUE",
     // String
     "UID",
     "DESCRIPTION",
@@ -78,6 +79,10 @@ pub enum Property {
     RecurrenceID,
     ExDate,
     RDate,
+    Due,
+
+    // Duration property
+    Duration,
 
     // String properties
     UID,
@@ -117,16 +122,26 @@ impl Property {
         let index = PROPERTY_IDENTIFIER
             .iter()
             .position(|&r| r == identifier)
-            .expect("Did not find the property linked with identifier");
+            .unwrap_or_else(||panic!("Did not find the property linked with identifier {}.", identifier));
 
         Property::try_from(index).unwrap()
     }
 
-    pub fn parse_property(line: String) -> (Property, ParserResult) {
-        let mut splitted_line = line.split(':');
-        let property = Property::get_property_from_identifier(splitted_line.next().unwrap());
+    pub fn get_identier<'a>(self)-> &'a str{
+        PROPERTY_IDENTIFIER[self as usize]
+    }
 
+    pub fn parse_property(line: String) -> (Property, ParserResult) {
+        // This line has the parameters on one side and the values on the other.
+        let mut splitted_line = line.split_once(':').unwrap();
+        let mut parameters = splitted_line.0.split(';');
+        
+        let property = Property::get_property_from_identifier(parameters.next().unwrap());
+
+
+        let result :ParserResult;
         match property {
+            // Time identifier
             Property::DTStamp
             | Property::Completed
             | Property::Created
@@ -134,8 +149,17 @@ impl Property {
             | Property::LastModified
             | Property::RecurrenceID
             | Property::ExDate
-            | Property::RDate => todo!(), // Date identifier
-
+            | Property::RDate
+            | Property::Due => {
+                // This is needed as parse_from_str wants timezone information.
+                let mut temp_string = splitted_line.1.to_string();
+                temp_string.push_str("+0000");
+                let date_time = DateTime::parse_from_str(temp_string.as_str(), "%Y%m%dT%H%M%SZ%z").unwrap();
+                result = ParserResult::DateTime(date_time);
+            } 
+            // Duration property
+            Property::Duration => todo!(),
+            // String identifier
             Property::UID // We might want to add a specific validator for UID
             | Property::Description
             | Property::Location
@@ -143,7 +167,7 @@ impl Property {
             | Property::Comment
             | Property::RelatedTo
             | Property::Resources
-            | Property::Categories => todo!(), // String identifier
+            | Property::Categories => result = ParserResult::String(String::from(splitted_line.1)), 
 
             Property::Organizer
             | Property::Attendee
@@ -162,12 +186,39 @@ impl Property {
             Property::Class => todo!(),
         }
 
-        (property, ParserResult::Geo(1., 1.))
+        (property, result)
     }
 }
 
 pub enum ParserResult {
     String(String),
-    DateTime(DateTime<Utc>),
+    DateTime(DateTime<FixedOffset>),
+    Duration(Duration),
     Geo(f32, f32),
+}
+impl From<ParserResult> for DateTime<FixedOffset>{
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::DateTime(val) => val,
+            _ => panic!("Not casting the right result"),
+        }
+    }
+}
+
+impl From<ParserResult> for String{
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::String(val) => val,
+            _ => panic!("Not casting the right result"),
+        }
+    }
+}
+
+impl From<ParserResult> for Duration{
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::Duration(val) => val,
+            _ => panic!("Not casting the right result"),
+        }
+    }
 }
