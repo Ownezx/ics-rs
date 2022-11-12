@@ -183,7 +183,7 @@ impl VTodo {
             (property_string, current_line) =
                 utils::process_multi_line_property(processed_line, &mut line_reader);
 
-            let (property, value) = Property::parse_property(property_string);
+            let (property, value) = Property::parse_property(property_string)?;
 
             match property {
                 Property::DTStamp => {

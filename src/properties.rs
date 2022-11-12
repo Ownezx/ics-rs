@@ -1,5 +1,7 @@
 use chrono::{DateTime, FixedOffset, format::Fixed, Duration};
 
+use crate::ics_error::ICSError;
+
 use self::uri::Uri;
 
 pub mod cal_adress;
@@ -18,6 +20,8 @@ const PROPERTY_IDENTIFIER: &[&str] = &[
     "EXDATE",
     "RDATE",
     "DUE",
+    // Duration
+    "DURATION",
     // String
     "UID",
     "DESCRIPTION",
@@ -69,6 +73,7 @@ macro_rules! back_to_enum {
 }
 
 back_to_enum! {
+#[derive(Debug,PartialEq)]
 pub enum Property {
     // Time properties
     DTStamp,
@@ -118,25 +123,36 @@ pub enum Property {
 }
 
 impl Property {
-    pub fn get_property_from_identifier(identifier: &str) -> Property {
+    pub fn get_property_from_identifier(identifier: &str) -> Option<Property> {
         let index = PROPERTY_IDENTIFIER
             .iter()
-            .position(|&r| r == identifier)
-            .unwrap_or_else(||panic!("Did not find the property linked with identifier {}.", identifier));
-
-        Property::try_from(index).unwrap()
+            .position(|&r| r == identifier);
+            
+        match index{
+            Some(index) => Some(Property::try_from(index).unwrap()),
+            None => None,
+        }
     }
 
     pub fn get_identier<'a>(self)-> &'a str{
         PROPERTY_IDENTIFIER[self as usize]
     }
 
-    pub fn parse_property(line: String) -> (Property, ParserResult) {
+    pub fn parse_property(line: String) -> Result<(Property, ParserResult),ICSError> {
         // This line has the parameters on one side and the values on the other.
         let mut splitted_line = line.split_once(':').unwrap();
         let mut parameters = splitted_line.0.split(';');
         
-        let property = Property::get_property_from_identifier(parameters.next().unwrap());
+
+        let var = parameters.next().unwrap();
+        // println!("{}",var);
+        let property = Property::get_property_from_identifier(var);
+
+        if property==None{
+            return Err(ICSError::UnableToParseProperty);
+        }
+
+        let property = property.unwrap();
 
 
         let result :ParserResult;
@@ -186,10 +202,11 @@ impl Property {
             Property::Class => todo!(),
         }
 
-        (property, result)
+        Ok((property, result))
     }
 }
 
+#[derive(Debug,PartialEq)]
 pub enum ParserResult {
     String(String),
     DateTime(DateTime<FixedOffset>),
@@ -222,3 +239,56 @@ impl From<ParserResult> for Duration{
         }
     }
 }
+
+
+#[test]
+fn special_property_parsing_cases() {
+    // String with another ':' in the parameter
+    let (property, value) = Property::parse_property("UID:This is a description: here".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description: here".to_string());
+    assert_eq!(property, Property::UID);
+
+    // Unknown property
+    let result = Property::parse_property("SDQ:content".to_string());
+    
+    assert_eq!(result, Err(ICSError::UnableToParseProperty));
+
+
+}
+
+#[test]
+fn all_string_properly_recognised() {
+    let (property, value) = Property::parse_property("UID:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::UID);
+
+    let (property, value) = Property::parse_property("DESCRIPTION:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::Description);
+
+    let (property, value) = Property::parse_property("LOCATION:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::Location);
+
+    let (property, value) = Property::parse_property("SUMMARY:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::Summary);
+
+    let (property, value) = Property::parse_property("COMMENT:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::Comment);
+
+    let (property, value) = Property::parse_property("RELATED-TO:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::RelatedTo);
+
+    let (property, value) = Property::parse_property("RESOURCES:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::Resources);
+
+    let (property, value) = Property::parse_property("CATEGORIES:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::Categories);
+}
+
+

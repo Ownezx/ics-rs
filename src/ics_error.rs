@@ -1,8 +1,9 @@
 use std::{error::Error, fmt};
 
 /// This is the list of all possible errors linked to the database.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ICSError {
+    UnableToParseProperty,
     PropertyConditionNotRespected,
     MissingNecessaryProperty,
     DuplicateUniqueProperty,
@@ -20,6 +21,7 @@ impl fmt::Display for ICSError {
             }
             ICSError::MissingNecessaryProperty => "Missing necessary property.",
             ICSError::PropertyConditionNotRespected => "Propoerty condition not Respected.",
+            ICSError::UnableToParseProperty => "Unable to parse property.",
         };
 
         write!(f, "{}", out_str)
