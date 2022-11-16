@@ -10,6 +10,7 @@ The property is defined by the following notation:
 */
 
 use crate::ics_error::ICSError;
+#[cfg(test)]
 use std::str::FromStr;
 
 /// This property defines the access classification for a calendar component.

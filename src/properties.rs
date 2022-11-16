@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use chrono::{DateTime, FixedOffset, Duration, TimeZone};
+use chrono::{DateTime, FixedOffset, Duration};
+#[cfg(test)]
+use chrono::TimeZone;
 
 use crate::ics_error::ICSError;
 
@@ -221,11 +223,11 @@ impl Property {
                     Err(_) => return Err(ICSError::UnableToParseProperty),
                 };
 
-                if float_lat < -90.  || 90. < float_lat{
+                if !(-90. ..=90.).contains(&float_lat){
                     return Err(ICSError::PropertyConditionNotRespected);
                 }
 
-                if float_long < -180.  || 180. < float_lat{
+                if !(-180. ..=180.).contains(&float_long){
                     return Err(ICSError::PropertyConditionNotRespected);
                 }
 
@@ -424,7 +426,7 @@ fn all_properties_properly_recognised() {
 
     // Geo
     let (property, value) = Property::parse_property("GEO:37.386013;-122.082932".to_string()).unwrap();
-    assert_eq!(<(f32,f32)>::from(value), (37.386013,-122.082932));
+    assert_eq!(<(f32,f32)>::from(value), (37.386013,-122.082_93));
     assert_eq!(property, Property::Geo);
 
     

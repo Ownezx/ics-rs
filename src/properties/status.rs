@@ -24,9 +24,10 @@ The property is defined by the following notation:
      ;Status values for "VJOURNAL".
 */
 
-use std::str::FromStr;
-
 use crate::ics_error::ICSError;
+
+#[cfg(test)]
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Status {
