@@ -173,10 +173,36 @@ impl Property {
             | Property::Due => {
                 // This is needed as parse_from_str wants timezone information.
                 let mut temp_string = splitted_line.1.to_string();
+                
+                // Deal with all the parameters possible for time values
+                let mut parameter = parameters.next();
+                while parameter.is_some(){
+                    // Split the parameter string
+                    let (param_name, param_value) = match parameter.unwrap().split_once('='){
+                        Some(val) => (val.0,val.1),
+                        None => return Err(ICSError::PropertyConditionNotRespected),
+                    };
+
+                    // Match the parameter with different possibilities
+                    match param_name {
+                        "VALUE" => {
+                            match param_value {
+                                // If it is a date, lets add some 0 time to parse it properly
+                                "DATE" => temp_string.push_str("T000000Z"), 
+                                "DATE-TIME" => {},
+                                _ => return Err(ICSError::PropertyConditionNotRespected),
+                            }
+                        }
+                        _ => return Err(ICSError::PropertyConditionNotRespected),
+                    }
+
+                    parameter = parameters.next();
+                }
+                
                 temp_string.push_str("+0000");
                 let date_time = match DateTime::parse_from_str(temp_string.as_str(), "%Y%m%dT%H%M%SZ%z"){
                     Ok(value) => value,
-                    Err(_) => return Err(ICSError::UnableToParseProperty),
+                    Err(_) => return Err(ICSError::PropertyConditionNotRespected),
                 };
                 ParserResult::DateTime(date_time)
             } 
@@ -449,20 +475,27 @@ fn string_parsing_cases() {
 
 #[test]
 fn geo_parsing_cases() {
+    assert_eq!(Property::parse_property("GEO:92.386013;122.082932".to_string()).unwrap_err(), ICSError::PropertyConditionNotRespected);
+    assert_eq!(Property::parse_property("GEO:-92.386013;122.082932".to_string()).unwrap_err(), ICSError::PropertyConditionNotRespected);
+    assert_eq!(Property::parse_property("GEO:82.386013;192.082932".to_string()).unwrap_err(), ICSError::PropertyConditionNotRespected);
+    assert_eq!(Property::parse_property("GEO:82.386013;-192.082932".to_string()).unwrap_err(), ICSError::PropertyConditionNotRespected);
+}
 
-    if let Err(err) = Property::parse_property("GEO:92.386013;-122.082932".to_string()) {
-        assert_eq!(err, ICSError::PropertyConditionNotRespected)
-    }
+#[test]
+fn date_time_parsing_cases() {
 
-    if let Err(err) = Property::parse_property("GEO:-92.386013;-122.082932".to_string()) {
-        assert_eq!(err, ICSError::PropertyConditionNotRespected)
-    }
+    // Random bad value
+    assert_eq!(Property::parse_property("DTSTAMP:QSDSD".to_string()).unwrap_err(), ICSError::PropertyConditionNotRespected);
 
-    if let Err(err) = Property::parse_property("GEO:82.386013;-192.082932".to_string()) {
-        assert_eq!(err, ICSError::PropertyConditionNotRespected)
-    }
+    // Able to read date_time
+    let expected_date = FixedOffset::east_opt(0).unwrap().ymd_opt(2007, 3, 13).unwrap()
+    .and_hms_opt(12, 34, 32).unwrap();
+    
+    let (_, value) = Property::parse_property("DTSTAMP:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
 
-    if let Err(err) = Property::parse_property("GEO:82.386013;192.082932".to_string()) {
-        assert_eq!(err, ICSError::PropertyConditionNotRespected)
-    }
+    let expected_date = FixedOffset::east_opt(0).unwrap().ymd_opt(2007, 5, 1).unwrap()
+    .and_hms_opt(0, 0, 0).unwrap();
+    let (_, value) = Property::parse_property("DUE;VALUE=DATE:20070501".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
 }
