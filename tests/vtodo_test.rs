@@ -41,6 +41,6 @@ fn vtodo_read_example_1() {
         "Submit Quebec Income Tax Return for 2006".to_string()
     );
     assert_eq!(vtodo.class.unwrap(), Class::CONFIDENTIAL);
-    assert_eq!(vtodo.status.unwrap(), Status::NeedsAction);
     assert_eq!(vtodo.categories, vec!["FAMILY", "FINANCE"]);
+    assert_eq!(vtodo.status.unwrap(), Status::NeedsAction);
 }

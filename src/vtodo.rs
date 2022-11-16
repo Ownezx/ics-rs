@@ -215,7 +215,10 @@ impl VTodo {
                 Property::Comment => vtodo.comment.push(value.try_into().unwrap()),
                 Property::RelatedTo => vtodo.related_to.push(value.try_into().unwrap()),
                 Property::Resources => vtodo.resources.push(value.try_into().unwrap()),
-                Property::Categories => vtodo.categories.push(value.try_into().unwrap()),
+                Property::Categories => {
+                    let mut string_vect: Vec<String> = value.try_into().unwrap();
+                    vtodo.categories.append(&mut string_vect);
+                }
                 Property::Organizer => todo!(),
                 Property::Attendee => todo!(),
                 Property::Contact => todo!(),

@@ -215,8 +215,18 @@ impl Property {
             | Property::Summary
             | Property::Comment
             | Property::RelatedTo
-            | Property::Resources
-            | Property::Categories =>  ParserResult::String(String::from(splitted_line.1)), 
+            | Property::Resources =>  ParserResult::String(String::from(splitted_line.1)), 
+
+            Property::Categories =>  {
+                let mut vec: Vec<String> = Vec::new();
+                let mut categories = splitted_line.1.split(',');
+                let mut category = categories.next();
+                while category.is_some() {
+                    vec.push(category.unwrap().to_string());
+                    category = categories.next();
+                }
+                ParserResult::Strings(vec)
+            } 
 
             Property::Organizer
             | Property::Attendee
@@ -270,6 +280,7 @@ impl Property {
 #[derive(Debug,PartialEq)]
 pub enum ParserResult {
     String(String),
+    Strings(Vec<String>),
     DateTime(DateTime<FixedOffset>),
     Duration(Duration),
     Integer(usize),
@@ -336,6 +347,15 @@ impl From<ParserResult> for (f32,f32){
     fn from(result: ParserResult) -> Self {
         match result {
             ParserResult::Geo(lat,long) => (lat,long),
+            _ => panic!("Not casting the right result"),
+        }
+    }
+}
+
+impl From<ParserResult> for Vec<String>{
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::Strings(val) => val,
             _ => panic!("Not casting the right result"),
         }
     }
@@ -418,7 +438,7 @@ fn all_properties_properly_recognised() {
     assert_eq!(property, Property::Resources);
 
     let (property, value) = Property::parse_property("CATEGORIES:This is a description".to_string()).unwrap();
-    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(<Vec<String>>::from(value), vec!["This is a description"]);
     assert_eq!(property, Property::Categories);
 
 
