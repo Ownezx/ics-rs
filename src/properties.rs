@@ -1,8 +1,7 @@
-use chrono::{DateTime, FixedOffset, format::Fixed, Duration};
+use chrono::{DateTime, FixedOffset, Duration, TimeZone};
 
 use crate::ics_error::ICSError;
 
-use self::uri::Uri;
 
 pub mod cal_adress;
 pub mod class;
@@ -73,7 +72,7 @@ macro_rules! back_to_enum {
 }
 
 back_to_enum! {
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq, Eq)]
 pub enum Property {
     // Time properties
     DTStamp,
@@ -128,10 +127,7 @@ impl Property {
             .iter()
             .position(|&r| r == identifier);
             
-        match index{
-            Some(index) => Some(Property::try_from(index).unwrap()),
-            None => None,
-        }
+        index.map(|index| Property::try_from(index).unwrap())
     }
 
     pub fn get_identier<'a>(self)-> &'a str{
@@ -140,7 +136,7 @@ impl Property {
 
     pub fn parse_property(line: String) -> Result<(Property, ParserResult),ICSError> {
         // This line has the parameters on one side and the values on the other.
-        let mut splitted_line = line.split_once(':').unwrap();
+        let splitted_line = line.split_once(':').unwrap();
         let mut parameters = splitted_line.0.split(';');
         
 
@@ -148,15 +144,14 @@ impl Property {
         // println!("{}",var);
         let property = Property::get_property_from_identifier(var);
 
-        if property==None{
+        if property.is_none(){
             return Err(ICSError::UnableToParseProperty);
         }
 
         let property = property.unwrap();
 
 
-        let result :ParserResult;
-        match property {
+        let result :ParserResult = match property {
             // Time identifier
             Property::DTStamp
             | Property::Completed
@@ -171,7 +166,7 @@ impl Property {
                 let mut temp_string = splitted_line.1.to_string();
                 temp_string.push_str("+0000");
                 let date_time = DateTime::parse_from_str(temp_string.as_str(), "%Y%m%dT%H%M%SZ%z").unwrap();
-                result = ParserResult::DateTime(date_time);
+                ParserResult::DateTime(date_time)
             } 
             // Duration property
             Property::Duration => todo!(),
@@ -183,7 +178,7 @@ impl Property {
             | Property::Comment
             | Property::RelatedTo
             | Property::Resources
-            | Property::Categories => result = ParserResult::String(String::from(splitted_line.1)), 
+            | Property::Categories =>  ParserResult::String(String::from(splitted_line.1)), 
 
             Property::Organizer
             | Property::Attendee
@@ -200,7 +195,7 @@ impl Property {
             Property::Geo => todo!(),
 
             Property::Class => todo!(),
-        }
+        };
 
         Ok((property, result))
     }
@@ -213,6 +208,7 @@ pub enum ParserResult {
     Duration(Duration),
     Geo(f32, f32),
 }
+
 impl From<ParserResult> for DateTime<FixedOffset>{
     fn from(result: ParserResult) -> Self {
         match result {
@@ -242,7 +238,7 @@ impl From<ParserResult> for Duration{
 
 
 #[test]
-fn special_property_parsing_cases() {
+fn special_string_parsing_cases() {
     // String with another ':' in the parameter
     let (property, value) = Property::parse_property("UID:This is a description: here".to_string()).unwrap();
     assert_eq!(String::from(value), "This is a description: here".to_string());
@@ -250,14 +246,56 @@ fn special_property_parsing_cases() {
 
     // Unknown property
     let result = Property::parse_property("SDQ:content".to_string());
-    
     assert_eq!(result, Err(ICSError::UnableToParseProperty));
 
 
 }
 
 #[test]
-fn all_string_properly_recognised() {
+fn all_properties_properly_recognised() {
+
+    // Date/Datetime
+    let expected_date = FixedOffset::east_opt(0).unwrap().ymd_opt(2007, 3, 13).unwrap()
+    .and_hms_opt(12, 34, 32).unwrap();
+    
+    let (property, value) = Property::parse_property("DTSTAMP:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::DTStamp);
+
+    let (property, value) = Property::parse_property("COMPLETED:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::Completed);
+
+    let (property, value) = Property::parse_property("CREATED:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::Created);
+
+    let (property, value) = Property::parse_property("DTSTART:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::DTStart);
+
+    let (property, value) = Property::parse_property("LAST-MODIFIED:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::LastModified);
+
+    let (property, value) = Property::parse_property("RECURRENCE-ID:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::RecurrenceID);
+
+    let (property, value) = Property::parse_property("EXDATE:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::ExDate);
+
+    let (property, value) = Property::parse_property("RDATE:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::RDate);
+
+    let (property, value) = Property::parse_property("DUE:20070313T123432Z".to_string()).unwrap();
+    assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+    assert_eq!(property, Property::Due);
+
+
+    // String properties
     let (property, value) = Property::parse_property("UID:This is a description".to_string()).unwrap();
     assert_eq!(String::from(value), "This is a description".to_string());
     assert_eq!(property, Property::UID);
