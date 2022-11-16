@@ -84,14 +84,14 @@ pub struct VTodo {
     pub created: Option<DateTime<FixedOffset>>,
     pub description: Option<String>,
     pub dtstart: Option<DateTime<FixedOffset>>,
-    pub geo: Option<(f64, f64)>,
+    pub geo: Option<(f32, f32)>,
     pub last_modified: Option<DateTime<FixedOffset>>,
     pub location: Option<String>,
     pub organizer: Option<CalAdress>,
-    pub percent: Option<isize>,
-    pub priority: Option<isize>,
+    pub percent: Option<usize>,
+    pub priority: Option<usize>,
     pub recurrence_id: Option<DateTime<FixedOffset>>,
-    pub sequence: Option<isize>,
+    pub sequence: Option<usize>,
     pub status: Option<Status>,
     pub summary: Option<String>,
     pub url: Option<Uri>,
@@ -193,14 +193,14 @@ impl VTodo {
                     has_dtstamp = true;
                     vtodo.dtstamp = value.try_into().unwrap();
                 }
-                Property::Completed => todo!(),
-                Property::Created => todo!(),
-                Property::DTStart => todo!(),
-                Property::LastModified => todo!(),
+                Property::Completed => vtodo.completed = Some(value.try_into().unwrap()),
+                Property::Created => vtodo.created = Some(value.try_into().unwrap()),
+                Property::DTStart => vtodo.dtstart = Some(value.try_into().unwrap()),
+                Property::LastModified => vtodo.last_modified = Some(value.try_into().unwrap()),
                 Property::RecurrenceID => todo!(),
-                Property::ExDate => todo!(),
-                Property::RDate => todo!(),
-                Property::Due => todo!(),
+                Property::ExDate => vtodo.exdate.push(value.try_into().unwrap()),
+                Property::RDate => vtodo.rdate.push(value.try_into().unwrap()),
+                Property::Due => vtodo.due = Some(value.try_into().unwrap()),
                 Property::Duration => todo!(),
                 Property::UID => {
                     if has_uid {
@@ -209,24 +209,30 @@ impl VTodo {
                     has_uid = true;
                     vtodo.uid = value.try_into().unwrap();
                 }
-                Property::Description => todo!(),
-                Property::Location => todo!(),
-                Property::Summary => todo!(),
-                Property::Comment => todo!(),
-                Property::RelatedTo => todo!(),
-                Property::Resources => todo!(),
-                Property::Categories => todo!(),
+                Property::Description => vtodo.description = Some(value.try_into().unwrap()),
+                Property::Location => vtodo.location = Some(value.try_into().unwrap()),
+                Property::Summary => vtodo.summary = Some(value.try_into().unwrap()),
+                Property::Comment => vtodo.comment.push(value.try_into().unwrap()),
+                Property::RelatedTo => vtodo.related_to.push(value.try_into().unwrap()),
+                Property::Resources => vtodo.resources.push(value.try_into().unwrap()),
+                Property::Categories => vtodo.categories.push(value.try_into().unwrap()),
                 Property::Organizer => todo!(),
                 Property::Attendee => todo!(),
                 Property::Contact => todo!(),
-                Property::PercentComplete => todo!(),
-                Property::Priority => todo!(),
-                Property::Sequence => todo!(),
-                Property::Status => todo!(),
+                Property::PercentComplete => vtodo.percent = Some(value.try_into().unwrap()),
+                Property::Priority => vtodo.priority = Some(value.try_into().unwrap()),
+                Property::Sequence => vtodo.sequence = Some(value.try_into().unwrap()),
+                Property::Status => {
+                    let status: Status = value.try_into().unwrap();
+                    if !status.validate_vtodo() {
+                        return Err(ICSError::PropertyConditionNotRespected);
+                    }
+                    vtodo.status = Some(status);
+                }
                 Property::URL => todo!(),
                 Property::Attach => todo!(),
-                Property::Geo => todo!(),
-                Property::Class => todo!(),
+                Property::Geo => vtodo.geo = Some(value.try_into().unwrap()),
+                Property::Class => vtodo.class = Some(value.try_into().unwrap()),
             }
         }
 
