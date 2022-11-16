@@ -186,8 +186,9 @@ impl Property {
 
             Property::PercentComplete
             | Property::Priority
-            | Property::Sequence
-            | Property::Status=>todo!(),
+            | Property::Sequence => ParserResult::Integer(splitted_line.1.to_string().parse().unwrap()),
+            
+            Property::Status => todo!(),
             
             Property::URL
             | Property::Attach => todo!(),
@@ -206,6 +207,7 @@ pub enum ParserResult {
     String(String),
     DateTime(DateTime<FixedOffset>),
     Duration(Duration),
+    Integer(usize),
     Geo(f32, f32),
 }
 
@@ -231,6 +233,15 @@ impl From<ParserResult> for Duration{
     fn from(result: ParserResult) -> Self {
         match result {
             ParserResult::Duration(val) => val,
+            _ => panic!("Not casting the right result"),
+        }
+    }
+}
+
+impl From<ParserResult> for usize{
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::Integer(val) => val,
             _ => panic!("Not casting the right result"),
         }
     }
@@ -327,6 +338,20 @@ fn all_properties_properly_recognised() {
     let (property, value) = Property::parse_property("CATEGORIES:This is a description".to_string()).unwrap();
     assert_eq!(String::from(value), "This is a description".to_string());
     assert_eq!(property, Property::Categories);
+
+    // Integer properties
+    let (property, value) = Property::parse_property("PERCENT-COMPLETE:1".to_string()).unwrap();
+    assert_eq!(usize::from(value), 1);
+    assert_eq!(property, Property::PercentComplete);
+
+    let (property, value) = Property::parse_property("PRIORITY:1".to_string()).unwrap();
+    assert_eq!(usize::from(value), 1);
+    assert_eq!(property, Property::Priority);
+    
+    let (property, value) = Property::parse_property("SEQUENCE:1".to_string()).unwrap();
+    assert_eq!(usize::from(value), 1);
+    assert_eq!(property, Property::Sequence);
+    
 }
 
 
