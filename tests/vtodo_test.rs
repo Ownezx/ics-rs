@@ -44,3 +44,49 @@ fn vtodo_read_example_1() {
     assert_eq!(vtodo.categories, vec!["FAMILY", "FINANCE"]);
     assert_eq!(vtodo.status.unwrap(), Status::NeedsAction);
 }
+
+#[test]
+//#[should_panic(expected = "testsdfss")]
+fn vtodo_read_example_2() {
+    let f = File::open("./tests/test_files/vtodo/example_vtodo_2").unwrap();
+    let buf_reader = BufReader::new(f);
+
+    // Consume the first VTODO line
+    let mut lines = buf_reader.lines();
+    println!("Removing first line : {}", lines.next().unwrap().unwrap());
+
+    let vtodo = VTodo::parse_from_bufreader(lines).unwrap();
+
+    assert_eq!(vtodo.uid, "20070514T103211Z-123404@example.com");
+    let expected_date = FixedOffset::east_opt(0)
+        .unwrap()
+        .ymd_opt(2007, 5, 14)
+        .unwrap()
+        .and_hms_opt(10, 32, 11)
+        .unwrap();
+    assert_eq!(vtodo.dtstamp, expected_date);
+
+    let expected_date = FixedOffset::east_opt(0)
+        .unwrap()
+        .ymd_opt(2007, 5, 14)
+        .unwrap()
+        .and_hms_opt(11, 0, 0)
+        .unwrap();
+    assert_eq!(vtodo.dtstart.unwrap(), expected_date);
+
+    let expected_date = FixedOffset::east_opt(0)
+        .unwrap()
+        .ymd_opt(2007, 07, 07)
+        .unwrap()
+        .and_hms_opt(10, 0, 0)
+        .unwrap();
+    assert_eq!(vtodo.completed.unwrap(), expected_date);
+
+    assert_eq!(
+        vtodo.summary.unwrap(),
+        "Submit Revised Internet-Draft".to_string()
+    );
+
+    assert_eq!(vtodo.priority.unwrap(), 1);
+    assert_eq!(vtodo.status.unwrap(), Status::NeedsAction);
+}
