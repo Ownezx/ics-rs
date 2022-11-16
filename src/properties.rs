@@ -140,7 +140,10 @@ impl Property {
 
     pub fn parse_property(line: String) -> Result<(Property, ParserResult),ICSError> {
         // This line has the parameters on one side and the values on the other.
-        let splitted_line = line.split_once(':').unwrap();
+        let splitted_line = match line.split_once(':'){
+            Some(l) => l,
+            None =>  return Err(ICSError::UnableToParseProperty),
+        };
         let mut parameters = splitted_line.0.split(';');
         
 
@@ -203,9 +206,24 @@ impl Property {
             Property::URL
             | Property::Attach => todo!(),
 
-            Property::Geo => todo!(),
+            Property::Geo => {
+                // Get the two floats
+                let (lat,long) = match splitted_line.1.split_once(';'){
+                    Some(values) => values,
+                    None => return Err(ICSError::UnableToParseProperty),
+                };
+                let float_lat :f32 = match  lat.to_string().parse(){
+                    Ok(val) => val,
+                    Err(_) => return Err(ICSError::UnableToParseProperty),
+                };
+                let float_long :f32 = match  long.to_string().parse(){
+                    Ok(val) => val,
+                    Err(_) => return Err(ICSError::UnableToParseProperty),
+                };
+                ParserResult::Geo(float_lat, float_long)
+            },
 
-            Property::Class => todo!(),
+            Property::Class => ParserResult::Class( Class::from_str(splitted_line.1)?),
         };
 
         Ok((property, result))
@@ -263,6 +281,24 @@ impl From<ParserResult> for Status{
     fn from(result: ParserResult) -> Self {
         match result {
             ParserResult::Status(val) => val,
+            _ => panic!("Not casting the right result"),
+        }
+    }
+}
+
+impl From<ParserResult> for Class{
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::Class(val) => val,
+            _ => panic!("Not casting the right result"),
+        }
+    }
+}
+
+impl From<ParserResult> for (f32,f32){
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::Geo(lat,long) => (lat,long),
             _ => panic!("Not casting the right result"),
         }
     }
@@ -382,6 +418,19 @@ fn all_properties_properly_recognised() {
     let (property, value) = Property::parse_property("STATUS:COMPLETED".to_string()).unwrap();
     assert_eq!(Status::from(value), Status::Completed);
     assert_eq!(property, Property::Status);
+
+
+    // Class
+    let (property, value) = Property::parse_property("CLASS:PUBLIC".to_string()).unwrap();
+    assert_eq!(Class::from(value), Class::PUBLIC);
+    assert_eq!(property, Property::Class);
+    
+
+    // Class
+    let (property, value) = Property::parse_property("GEO:37.386013;-122.082932".to_string()).unwrap();
+    assert_eq!(<(f32,f32)>::from(value), (37.386013,-122.082932));
+    assert_eq!(property, Property::Geo);
+
     
 }
 
