@@ -4,7 +4,7 @@ use chrono::{DateTime, FixedOffset, Duration, TimeZone};
 
 use crate::ics_error::ICSError;
 
-use self::status::Status;
+use self::{status::Status, class::Class};
 
 
 pub mod cal_adress;
@@ -219,6 +219,7 @@ pub enum ParserResult {
     Duration(Duration),
     Integer(usize),
     Status(Status),
+    Class(Class),
     Geo(f32, f32),
 }
 
@@ -325,7 +326,7 @@ fn all_properties_properly_recognised() {
     assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
     assert_eq!(property, Property::Due);
 
-    
+
 
     // String properties
     let (property, value) = Property::parse_property("UID:This is a description".to_string()).unwrap();
