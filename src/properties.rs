@@ -202,7 +202,13 @@ impl Property {
                 temp_string.push_str("+0000");
                 let date_time = match DateTime::parse_from_str(temp_string.as_str(), "%Y%m%dT%H%M%SZ%z"){
                     Ok(value) => value,
-                    Err(_) => return Err(ICSError::PropertyConditionNotRespected),
+                    Err(_) =>{ 
+                        match DateTime::parse_from_str(temp_string.as_str(), "%Y%m%dT%H%MZ%z"){
+                        Ok(value) => value,
+                        Err(_) => return Err(ICSError::PropertyConditionNotRespected),
+                        
+                    }
+                }
                 };
                 ParserResult::DateTime(date_time)
             } 
