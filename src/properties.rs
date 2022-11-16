@@ -1,6 +1,10 @@
+use std::str::FromStr;
+
 use chrono::{DateTime, FixedOffset, Duration, TimeZone};
 
 use crate::ics_error::ICSError;
+
+use self::status::Status;
 
 
 pub mod cal_adress;
@@ -165,7 +169,10 @@ impl Property {
                 // This is needed as parse_from_str wants timezone information.
                 let mut temp_string = splitted_line.1.to_string();
                 temp_string.push_str("+0000");
-                let date_time = DateTime::parse_from_str(temp_string.as_str(), "%Y%m%dT%H%M%SZ%z").unwrap();
+                let date_time = match DateTime::parse_from_str(temp_string.as_str(), "%Y%m%dT%H%M%SZ%z"){
+                    Ok(value) => value,
+                    Err(_) => return Err(ICSError::UnableToParseProperty),
+                };
                 ParserResult::DateTime(date_time)
             } 
             // Duration property
@@ -186,9 +193,12 @@ impl Property {
 
             Property::PercentComplete
             | Property::Priority
-            | Property::Sequence => ParserResult::Integer(splitted_line.1.to_string().parse().unwrap()),
+            | Property::Sequence => {match splitted_line.1.to_string().parse(){
+                Ok(integer) => ParserResult::Integer(integer),
+                Err(_) => return Err(ICSError::UnableToParseProperty),
+            }}
             
-            Property::Status => todo!(),
+            Property::Status => ParserResult::Status( Status::from_str(splitted_line.1)?),
             
             Property::URL
             | Property::Attach => todo!(),
@@ -208,6 +218,7 @@ pub enum ParserResult {
     DateTime(DateTime<FixedOffset>),
     Duration(Duration),
     Integer(usize),
+    Status(Status),
     Geo(f32, f32),
 }
 
