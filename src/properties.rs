@@ -258,6 +258,15 @@ impl From<ParserResult> for usize{
     }
 }
 
+impl From<ParserResult> for Status{
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::Status(val) => val,
+            _ => panic!("Not casting the right result"),
+        }
+    }
+}
+
 
 #[test]
 fn special_string_parsing_cases() {
@@ -316,6 +325,7 @@ fn all_properties_properly_recognised() {
     assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
     assert_eq!(property, Property::Due);
 
+    
 
     // String properties
     let (property, value) = Property::parse_property("UID:This is a description".to_string()).unwrap();
@@ -350,6 +360,8 @@ fn all_properties_properly_recognised() {
     assert_eq!(String::from(value), "This is a description".to_string());
     assert_eq!(property, Property::Categories);
 
+
+
     // Integer properties
     let (property, value) = Property::parse_property("PERCENT-COMPLETE:1".to_string()).unwrap();
     assert_eq!(usize::from(value), 1);
@@ -362,6 +374,13 @@ fn all_properties_properly_recognised() {
     let (property, value) = Property::parse_property("SEQUENCE:1".to_string()).unwrap();
     assert_eq!(usize::from(value), 1);
     assert_eq!(property, Property::Sequence);
+
+
+
+    // Status
+    let (property, value) = Property::parse_property("STATUS:COMPLETED".to_string()).unwrap();
+    assert_eq!(Status::from(value), Status::Completed);
+    assert_eq!(property, Property::Status);
     
 }
 
