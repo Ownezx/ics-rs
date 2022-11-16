@@ -66,7 +66,7 @@ Purpose:  Provide a grouping of calendar properties that describe a
 use crate::ics_error::ICSError;
 use crate::properties::class::Class;
 use crate::properties::uri::Uri;
-use crate::properties::{cal_adress::CalAdress, status::VTodoStatus};
+use crate::properties::{cal_adress::CalAdress, status::Status};
 use crate::properties::{ParserResult, Property};
 use crate::utils;
 use chrono::{Date, DateTime, Duration, FixedOffset, Utc};
@@ -92,7 +92,7 @@ pub struct VTodo {
     pub priority: Option<isize>,
     pub recurrence_id: Option<DateTime<FixedOffset>>,
     pub sequence: Option<isize>,
-    pub status: Option<VTodoStatus>,
+    pub status: Option<Status>,
     pub summary: Option<String>,
     pub url: Option<Uri>,
 
