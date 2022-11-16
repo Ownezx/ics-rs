@@ -220,6 +220,15 @@ impl Property {
                     Ok(val) => val,
                     Err(_) => return Err(ICSError::UnableToParseProperty),
                 };
+
+                if float_lat < -90.  || 90. < float_lat{
+                    return Err(ICSError::PropertyConditionNotRespected);
+                }
+
+                if float_long < -180.  || 180. < float_lat{
+                    return Err(ICSError::PropertyConditionNotRespected);
+                }
+
                 ParserResult::Geo(float_lat, float_long)
             },
 
@@ -305,19 +314,6 @@ impl From<ParserResult> for (f32,f32){
 }
 
 
-#[test]
-fn special_string_parsing_cases() {
-    // String with another ':' in the parameter
-    let (property, value) = Property::parse_property("UID:This is a description: here".to_string()).unwrap();
-    assert_eq!(String::from(value), "This is a description: here".to_string());
-    assert_eq!(property, Property::UID);
-
-    // Unknown property
-    let result = Property::parse_property("SDQ:content".to_string());
-    assert_eq!(result, Err(ICSError::UnableToParseProperty));
-
-
-}
 
 #[test]
 fn all_properties_properly_recognised() {
@@ -426,7 +422,7 @@ fn all_properties_properly_recognised() {
     assert_eq!(property, Property::Class);
     
 
-    // Class
+    // Geo
     let (property, value) = Property::parse_property("GEO:37.386013;-122.082932".to_string()).unwrap();
     assert_eq!(<(f32,f32)>::from(value), (37.386013,-122.082932));
     assert_eq!(property, Property::Geo);
@@ -435,3 +431,36 @@ fn all_properties_properly_recognised() {
 }
 
 
+#[test]
+fn string_parsing_cases() {
+    // String with another ':' in the parameter
+    let (property, value) = Property::parse_property("UID:This is a description: here".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description: here".to_string());
+    assert_eq!(property, Property::UID);
+
+    // Unknown property
+    let result = Property::parse_property("SDQ:content".to_string());
+    assert_eq!(result, Err(ICSError::UnableToParseProperty));
+
+
+}
+
+#[test]
+fn geo_parsing_cases() {
+
+    if let Err(err) = Property::parse_property("GEO:92.386013;-122.082932".to_string()) {
+        assert_eq!(err, ICSError::PropertyConditionNotRespected)
+    }
+
+    if let Err(err) = Property::parse_property("GEO:-92.386013;-122.082932".to_string()) {
+        assert_eq!(err, ICSError::PropertyConditionNotRespected)
+    }
+
+    if let Err(err) = Property::parse_property("GEO:82.386013;-192.082932".to_string()) {
+        assert_eq!(err, ICSError::PropertyConditionNotRespected)
+    }
+
+    if let Err(err) = Property::parse_property("GEO:82.386013;192.082932".to_string()) {
+        assert_eq!(err, ICSError::PropertyConditionNotRespected)
+    }
+}

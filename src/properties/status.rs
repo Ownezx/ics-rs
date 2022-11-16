@@ -73,7 +73,7 @@ impl std::str::FromStr for Status {
             "DRAFT" => Ok(Status::Draft),
             "FINAL" => Ok(Status::Final),
             "CANCELLED" => Ok(Status::Cancelled),
-            _ => Err(ICSError::UnableToParseProperty),
+            _ => Err(ICSError::PropertyConditionNotRespected),
         }
     }
 }
