@@ -500,6 +500,7 @@ fn string_parsing_cases() {
     assert_eq!(result, Err(ICSError::UknownProperty));
 }
 
+#[ignore]
 #[test]
 fn cal_address_parsing_cases() {
     let (property, value) =
@@ -573,4 +574,16 @@ fn date_time_parsing_cases() {
         .unwrap();
     let (_, value) = Property::parse_property("DUE;VALUE=DATE:20070501".to_string()).unwrap();
     assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+}
+
+#[ignore]
+#[test]
+fn x_property_tests() {
+    todo!();
+}
+
+#[ignore]
+#[test]
+fn iana_token_property_tests() {
+    todo!();
 }

@@ -55,8 +55,79 @@ iCalendar object will consist of just a single "VEVENT", "VTODO" or
 "VJOURNAL" calendar component.
 */
 
-pub struct vcalendar {
+use std::fs::File;
+use std::io::BufReader;
+use std::path::Path;
+
+use chrono::{DateTime, FixedOffset, TimeZone};
+use chrono_tz::Tz;
+
+use crate::ics_error::ICSError;
+use crate::vevent::VEvent;
+use crate::vjournal::VJournal;
+use crate::vtodo::VTodo;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[derive(Debug)]
+pub struct VCalendar {
     // Necessary variables
     prodid: String,
     version: String,
+
+    // Optional variables
+    calscale: Option<String>,
+    method: Option<String>,
+
+    // One of the components
+    vjournal: Option<VJournal>,
+    vtodo: Option<VTodo>,
+    vevent: Option<VEvent>,
+}
+
+impl VCalendar {
+    pub fn new_empty() -> VCalendar {
+        VCalendar {
+            prodid: format!("-//ics-rs//{VERSION}//EN"),
+            version: "2.0".to_string(),
+            calscale: None,
+            method: None,
+            vjournal: None,
+            vtodo: None,
+            vevent: None,
+        }
+    }
+
+    pub fn load_vcal_from_file(path: &Path) -> Result<VCalendar, ICSError> {
+        if !path.ends_with(".ics") {
+            return Err(ICSError::NotICSFile);
+        }
+
+        let f = File::open(path).unwrap();
+        let buf_reader = BufReader::new(f);
+
+        let mut vcal_object = VCalendar::new_empty();
+
+        Ok(vcal_object)
+    }
+}
+
+#[test]
+fn ics_extention_verification() {
+    assert_eq!(
+        VCalendar::load_vcal_from_file(Path::new("test.random")).unwrap_err(),
+        ICSError::NotICSFile
+    );
+}
+
+#[ignore]
+#[test]
+fn x_components_tests() {
+    todo!();
+}
+
+#[ignore]
+#[test]
+fn iana_token_components_tests() {
+    todo!();
 }

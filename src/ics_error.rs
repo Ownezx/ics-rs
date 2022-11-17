@@ -9,6 +9,7 @@ pub enum ICSError {
     DuplicateUniqueProperty,
     BeginWithoutEnd,
     UknownProperty,
+    NotICSFile,
 }
 
 impl Error for ICSError {}
@@ -24,6 +25,7 @@ impl fmt::Display for ICSError {
             ICSError::PropertyConditionNotRespected => "Propoerty condition not Respected.",
             ICSError::UnableToParseProperty => "Unable to parse property.",
             ICSError::UknownProperty => "Unknown property.",
+            ICSError::NotICSFile => "Pointed file is not an ICS.",
         };
 
         write!(f, "{}", out_str)
