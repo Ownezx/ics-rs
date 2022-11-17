@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.22"
+chrono-tz = "0.8.0"
 time = "0.3.16"
 
 [lib]
