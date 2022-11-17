@@ -500,6 +500,19 @@ fn string_parsing_cases() {
 }
 
 #[test]
+fn cal_address_parsing_cases() {
+    let (property, value) = Property::parse_property("ORGANIZER:MAILTO:jane_doe@host.com".to_string()).unwrap();
+    let (property, value) = Property::parse_property("ORGANIZER;CN=John Smith:MAILTO:jsmith@host1.com".to_string()).unwrap();
+    let (property, value) = Property::parse_property("ORGANIZER;CN=JohnSmith;DIR=\"ldap://host.com:6666/o=3DDC%20Associ
+    ates,c=3DUS??(cn=3DJohn%20Smith)\":MAILTO:jsmith@host1.com".to_string()).unwrap();
+    let (property, value) = Property::parse_property("ORGANIZER;SENT-BY=\"MAILTO:jane_doe@host.com\":MAILTO:jsmith@host1.com".to_string()).unwrap();
+    let (property, value) = Property::parse_property("CONTACT:Jim Dolittle\\, ABC Industries\\, +1-919-555-1234".to_string()).unwrap();
+    let (property, value) = Property::parse_property("CONTACT;ALTREP=\"ldap://host.com:6666/o=3DABC%20Industries\\,c=3DUS??(cn=3DBJim%20Dolittle\":Jim Dolittle\\, ABC Industries\\,+1-919-555-1234".to_string()).unwrap();
+    let (property, value) = Property::parse_property("CONTACT;ALTREP=\"CID=<part3.msg970930T083000SILVER@host.com>\":JimDolittle\\, ABC Industries\\, +1-919-555-1234".to_string()).unwrap();
+    let (property, value) = Property::parse_property("CONTACT;ALTREP=\"http://host.com/pdi/jdoe.vcf\":JimDolittle\\, ABC Industries\\, +1-919-555-1234".to_string()).unwrap();   
+}
+
+#[test]
 fn geo_parsing_cases() {
     assert_eq!(Property::parse_property("GEO:92.386013;122.082932".to_string()).unwrap_err(), ICSError::PropertyConditionNotRespected);
     assert_eq!(Property::parse_property("GEO:-92.386013;122.082932".to_string()).unwrap_err(), ICSError::PropertyConditionNotRespected);
