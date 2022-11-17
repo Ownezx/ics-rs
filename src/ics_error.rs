@@ -8,8 +8,10 @@ pub enum ICSError {
     MissingNecessaryProperty,
     DuplicateUniqueProperty,
     BeginWithoutEnd,
+    NoBegin,
     UknownProperty,
     NotICSFile,
+    ReadError,
 }
 
 impl Error for ICSError {}
@@ -26,6 +28,8 @@ impl fmt::Display for ICSError {
             ICSError::UnableToParseProperty => "Unable to parse property.",
             ICSError::UknownProperty => "Unknown property.",
             ICSError::NotICSFile => "Pointed file is not an ICS.",
+            ICSError::NoBegin => "ICS file has no BEGIN:VCALENDAR",
+            ICSError::ReadError => "Cannot read file.",
         };
 
         write!(f, "{}", out_str)

@@ -56,13 +56,15 @@ iCalendar object will consist of just a single "VEVENT", "VTODO" or
 */
 
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use chrono::{DateTime, FixedOffset, TimeZone};
 use chrono_tz::Tz;
 
 use crate::ics_error::ICSError;
+use crate::properties::Property;
+use crate::utils;
 use crate::vevent::VEvent;
 use crate::vjournal::VJournal;
 use crate::vtodo::VTodo;
@@ -108,10 +110,56 @@ impl VCalendar {
             None => return Err(ICSError::NotICSFile),
         }
 
+        let mut has_prod_id = false;
+        let mut has_version = false;
+
         let f = File::open(path).unwrap();
         let buf_reader = BufReader::new(f);
-
+        let mut line_reader = buf_reader.lines();
         let mut vcal_object = VCalendar::new_empty();
+
+        loop {
+            let mut current_line = match line_reader.next() {
+                Some(result) => match result {
+                    Ok(line) => line,
+                    Err(e) => return Err(ICSError::ReadError),
+                },
+                None => return Err(ICSError::NoBegin),
+            };
+
+            if current_line.starts_with("BEGIN:VCALENDAR") {
+                break;
+            }
+        }
+
+        let mut current_line: Option<Result<String, std::io::Error>> = line_reader.next();
+
+        loop {
+            let line = current_line;
+            let processed_line: String;
+            match line {
+                Some(line) => {
+                    // Read line
+                    processed_line = line.unwrap();
+                    // End the process if we have arrived at the end.
+                    if processed_line.starts_with("END:VCALENDAR") {
+                        break;
+                    }
+                }
+                None => return Err(ICSError::BeginWithoutEnd),
+            }
+
+            // Here we need to be able to process multi line arguments.
+            let property_string: String;
+            (property_string, current_line) =
+                utils::process_multi_line_property(processed_line, &mut line_reader);
+
+            let (property, value) = Property::parse_property(property_string)?;
+        }
+
+        if !has_prod_id || !has_version {
+            return Err(ICSError::MissingNecessaryProperty);
+        }
 
         Ok(vcal_object)
     }

@@ -175,7 +175,10 @@ impl VTodo {
             match line {
                 Some(line) => {
                     // Read line
-                    processed_line = line.unwrap();
+                    processed_line = match line {
+                        Ok(val) => val,
+                        Err(_) => return Err(ICSError::ReadError),
+                    };
                     // End the process if we have arrived at the end.
                     if processed_line.starts_with("END:VTODO") {
                         break;
