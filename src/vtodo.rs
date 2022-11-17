@@ -78,6 +78,7 @@ use chrono::TimeZone;
 #[cfg(test)]
 use std::io::BufRead;
 
+#[derive(Debug)]
 pub struct VTodo {
     // Necessary variables
     pub dtstamp: DateTime<FixedOffset>,
@@ -157,7 +158,7 @@ impl VTodo {
 
     /// Reads the content of a VTODO object. The buffer passed should already have consumed the BEGIN:VTODO.
     pub fn parse_from_bufreader(
-        mut line_reader: Lines<BufReader<File>>,
+        line_reader: &mut Lines<BufReader<File>>,
     ) -> Result<VTodo, ICSError> {
         let mut vtodo: VTodo = VTodo::new_empty(
             DateTime::from_utc(Utc::now().naive_utc(), FixedOffset::east(0)),
@@ -186,7 +187,7 @@ impl VTodo {
             // Here we need to be able to process multi line arguments.
             let property_string: String;
             (property_string, current_line) =
-                utils::process_multi_line_property(processed_line, &mut line_reader);
+                utils::process_multi_line_property(processed_line, line_reader);
 
             let (property, value) = Property::parse_property(property_string)?;
 
@@ -198,14 +199,16 @@ impl VTodo {
                     has_dtstamp = true;
                     vtodo.dtstamp = value.try_into().unwrap();
                 }
-                Property::Completed => vtodo.completed = Some(value.try_into().unwrap()),
-                Property::Created => vtodo.created = Some(value.try_into().unwrap()),
-                Property::DTStart => vtodo.dtstart = Some(value.try_into().unwrap()),
-                Property::LastModified => vtodo.last_modified = Some(value.try_into().unwrap()),
+                Property::Completed => utils::apply_unique_property(&mut vtodo.completed, value)?,
+                Property::Created => utils::apply_unique_property(&mut vtodo.created, value)?,
+                Property::DTStart => utils::apply_unique_property(&mut vtodo.dtstart, value)?,
+                Property::LastModified => {
+                    utils::apply_unique_property(&mut vtodo.last_modified, value)?
+                }
                 Property::RecurrenceID => todo!(),
                 Property::ExDate => vtodo.exdate.push(value.try_into().unwrap()),
                 Property::RDate => vtodo.rdate.push(value.try_into().unwrap()),
-                Property::Due => vtodo.due = Some(value.try_into().unwrap()),
+                Property::Due => utils::apply_unique_property(&mut vtodo.due, value)?,
                 Property::Duration => todo!(),
                 Property::UID => {
                     if has_uid {
@@ -214,9 +217,11 @@ impl VTodo {
                     has_uid = true;
                     vtodo.uid = value.try_into().unwrap();
                 }
-                Property::Description => vtodo.description = Some(value.try_into().unwrap()),
-                Property::Location => vtodo.location = Some(value.try_into().unwrap()),
-                Property::Summary => vtodo.summary = Some(value.try_into().unwrap()),
+                Property::Description => {
+                    utils::apply_unique_property(&mut vtodo.description, value)?
+                }
+                Property::Location => utils::apply_unique_property(&mut vtodo.location, value)?,
+                Property::Summary => utils::apply_unique_property(&mut vtodo.summary, value)?,
                 Property::Comment => vtodo.comment.push(value.try_into().unwrap()),
                 Property::RelatedTo => vtodo.related_to.push(value.try_into().unwrap()),
                 Property::Resources => vtodo.resources.push(value.try_into().unwrap()),
@@ -227,10 +232,15 @@ impl VTodo {
                 Property::Organizer => todo!(),
                 Property::Attendee => todo!(),
                 Property::Contact => todo!(),
-                Property::PercentComplete => vtodo.percent = Some(value.try_into().unwrap()),
-                Property::Priority => vtodo.priority = Some(value.try_into().unwrap()),
-                Property::Sequence => vtodo.sequence = Some(value.try_into().unwrap()),
+                Property::PercentComplete => {
+                    utils::apply_unique_property(&mut vtodo.percent, value)?
+                }
+                Property::Priority => utils::apply_unique_property(&mut vtodo.priority, value)?,
+                Property::Sequence => utils::apply_unique_property(&mut vtodo.sequence, value)?,
                 Property::Status => {
+                    if vtodo.status.is_some() {
+                        return Err(ICSError::DuplicateUniqueProperty);
+                    }
                     let status: Status = value.try_into().unwrap();
                     if !status.validate_vtodo() {
                         return Err(ICSError::PropertyConditionNotRespected);
@@ -239,8 +249,8 @@ impl VTodo {
                 }
                 Property::URL => todo!(),
                 Property::Attach => todo!(),
-                Property::Geo => vtodo.geo = Some(value.try_into().unwrap()),
-                Property::Class => vtodo.class = Some(value.try_into().unwrap()),
+                Property::Geo => utils::apply_unique_property(&mut vtodo.geo, value)?,
+                Property::Class => utils::apply_unique_property(&mut vtodo.class, value)?,
             }
         }
 
@@ -261,7 +271,7 @@ fn vtodo_read_example_1() {
     let mut lines = buf_reader.lines();
     println!("Removing first line : {}", lines.next().unwrap().unwrap());
 
-    let vtodo = VTodo::parse_from_bufreader(lines).unwrap();
+    let vtodo = VTodo::parse_from_bufreader(&mut lines).unwrap();
 
     assert_eq!(vtodo.uid, "20070313T123432Z-456553@example.com");
     let expected_date = FixedOffset::east_opt(0)
@@ -296,7 +306,7 @@ fn vtodo_read_example_2() {
     let mut lines = buf_reader.lines();
     println!("Removing first line : {}", lines.next().unwrap().unwrap());
 
-    let vtodo = VTodo::parse_from_bufreader(lines).unwrap();
+    let vtodo = VTodo::parse_from_bufreader(&mut lines).unwrap();
 
     assert_eq!(vtodo.uid, "20070514T103211Z-123404@example.com");
     let expected_date = FixedOffset::east_opt(0)
@@ -341,7 +351,7 @@ fn vtodo_read_example_3() {
     let mut lines = buf_reader.lines();
     println!("Removing first line : {}", lines.next().unwrap().unwrap());
 
-    let vtodo = VTodo::parse_from_bufreader(lines).unwrap();
+    let vtodo = VTodo::parse_from_bufreader(&mut lines).unwrap();
 
     assert_eq!(vtodo.uid, "19970901T130000Z-123404@host.com");
 
@@ -374,4 +384,28 @@ fn vtodo_read_example_3() {
     assert_eq!(vtodo.categories, vec!["FAMILY", "FINANCE"]);
     assert_eq!(vtodo.priority.unwrap(), 1);
     assert_eq!(vtodo.status.unwrap(), Status::NeedsAction);
+}
+
+/// THIS IS MISSING THE CAL ADRESSES AND URI
+#[test]
+fn vtodo_duplicate_variable() {
+    let f = File::open("./tests/test_files/vtodo/duplicate_variable").unwrap();
+    let buf_reader = BufReader::new(f);
+
+    // Consume the first VTODO line
+    let mut lines = buf_reader.lines();
+    let mut current_line = lines.next();
+
+    let mut i: isize = 0;
+    while let Some(ref non_null_line) = current_line {
+        if non_null_line.as_ref().unwrap().as_str() == "BEGIN:VTODO" {
+            i += 1;
+            println!("Processing vtodo number {i}");
+            let error = VTodo::parse_from_bufreader(&mut lines).unwrap_err();
+            assert_eq!(error, ICSError::DuplicateUniqueProperty);
+            current_line = lines.next();
+        } else {
+            current_line = lines.next();
+        }
+    }
 }

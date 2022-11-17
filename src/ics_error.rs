@@ -8,6 +8,7 @@ pub enum ICSError {
     MissingNecessaryProperty,
     DuplicateUniqueProperty,
     BeginWithoutEnd,
+    UknownProperty,
 }
 
 impl Error for ICSError {}
@@ -22,6 +23,7 @@ impl fmt::Display for ICSError {
             ICSError::MissingNecessaryProperty => "Missing necessary property.",
             ICSError::PropertyConditionNotRespected => "Propoerty condition not Respected.",
             ICSError::UnableToParseProperty => "Unable to parse property.",
+            ICSError::UknownProperty => "Unknown property.",
         };
 
         write!(f, "{}", out_str)

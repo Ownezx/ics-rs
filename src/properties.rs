@@ -154,7 +154,7 @@ impl Property {
         let property = Property::get_property_from_identifier(var);
 
         if property.is_none(){
-            return Err(ICSError::UnableToParseProperty);
+            return Err(ICSError::UknownProperty);
         }
 
         let property = property.unwrap();
@@ -494,7 +494,7 @@ fn string_parsing_cases() {
 
     // Unknown property
     let result = Property::parse_property("SDQ:content".to_string());
-    assert_eq!(result, Err(ICSError::UnableToParseProperty));
+    assert_eq!(result, Err(ICSError::UknownProperty));
 
 
 }
