@@ -99,8 +99,13 @@ impl VCalendar {
     }
 
     pub fn load_vcal_from_file(path: &Path) -> Result<VCalendar, ICSError> {
-        if !path.ends_with(".ics") {
-            return Err(ICSError::NotICSFile);
+        match path.extension() {
+            Some(ext_value) => {
+                if ext_value != "ics" {
+                    return Err(ICSError::NotICSFile);
+                }
+            }
+            None => return Err(ICSError::NotICSFile),
         }
 
         let f = File::open(path).unwrap();
@@ -118,6 +123,22 @@ fn ics_extention_verification() {
         VCalendar::load_vcal_from_file(Path::new("test.random")).unwrap_err(),
         ICSError::NotICSFile
     );
+
+    assert_eq!(
+        VCalendar::load_vcal_from_file(Path::new("test.icsr")).unwrap_err(),
+        ICSError::NotICSFile
+    );
+
+    assert_eq!(
+        VCalendar::load_vcal_from_file(Path::new("testics")).unwrap_err(),
+        ICSError::NotICSFile
+    );
+}
+
+#[test]
+fn vtodo_parse_validation() {
+    let vcal_object =
+        VCalendar::load_vcal_from_file(Path::new("./tests/test_files/vtodo/example2.ics")).unwrap();
 }
 
 #[ignore]
