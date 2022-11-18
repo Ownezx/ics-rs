@@ -35,6 +35,10 @@ const PROPERTY_IDENTIFIER: &[&str] = &[
     "RELATED-TO",
     "RESOURCES",
     "CATEGORIES",
+    "PRODID",
+    "VERSION",
+    "CALSCALE",
+    "METHOD",
     // Cal address
     "ORGANIZER",
     "ATTENDEE",
@@ -102,6 +106,10 @@ pub enum Property {
     RelatedTo,
     Resources,
     Categories,
+    ProdID,
+    Version,
+    CalScale,
+    Method,
 
     // Cal adress properties
     Organizer,
@@ -141,16 +149,16 @@ impl Property {
         // This line has the parameters on one side and the values on the other.
         let splitted_line = match line.split_once(':') {
             Some(l) => l,
-            None => return Err(ICSError::UnableToParseProperty),
+            None => return Err(ICSError::UnableToParseProperty(line)),
         };
         let mut parameters = splitted_line.0.split(';');
 
-        let var = parameters.next().unwrap();
+        let property_name = parameters.next().unwrap();
         // println!("{}",var);
-        let property = Property::get_property_from_identifier(var);
+        let property = Property::get_property_from_identifier(property_name);
 
         if property.is_none() {
-            return Err(ICSError::UknownProperty);
+            return Err(ICSError::UknownProperty(property_name.to_string()));
         }
 
         let property = property.unwrap();
@@ -175,7 +183,11 @@ impl Property {
                     // Split the parameter string
                     let (param_name, param_value) = match parameter.unwrap().split_once('=') {
                         Some(val) => (val.0, val.1),
-                        None => return Err(ICSError::PropertyConditionNotRespected),
+                        None => {
+                            return Err(ICSError::PropertyConditionNotRespected(
+                                property_name.to_string(),
+                            ))
+                        }
                     };
 
                     // Match the parameter with different possibilities
@@ -185,10 +197,18 @@ impl Property {
                                 // If it is a date, lets add some 0 time to parse it properly
                                 "DATE" => temp_string.push_str("T000000Z"),
                                 "DATE-TIME" => {}
-                                _ => return Err(ICSError::PropertyConditionNotRespected),
+                                _ => {
+                                    return Err(ICSError::PropertyConditionNotRespected(
+                                        property_name.to_string(),
+                                    ))
+                                }
                             }
                         }
-                        _ => return Err(ICSError::PropertyConditionNotRespected),
+                        _ => {
+                            return Err(ICSError::PropertyConditionNotRespected(
+                                property_name.to_string(),
+                            ))
+                        }
                     }
 
                     parameter = parameters.next();
@@ -201,7 +221,11 @@ impl Property {
                         Err(_) => {
                             match DateTime::parse_from_str(temp_string.as_str(), "%Y%m%dT%H%MZ%z") {
                                 Ok(value) => value,
-                                Err(_) => return Err(ICSError::PropertyConditionNotRespected),
+                                Err(_) => {
+                                    return Err(ICSError::PropertyConditionNotRespected(
+                                        property_name.to_string(),
+                                    ))
+                                }
                             }
                         }
                     };
@@ -217,7 +241,11 @@ impl Property {
             | Property::Summary
             | Property::Comment
             | Property::RelatedTo
-            | Property::Resources => ParserResult::String(String::from(splitted_line.1)),
+            | Property::Resources
+            | Property::ProdID
+            | Property::Version
+            | Property::CalScale
+            | Property::Method => ParserResult::String(String::from(splitted_line.1)),
 
             Property::Categories => {
                 let mut vec: Vec<String> = Vec::new();
@@ -235,7 +263,9 @@ impl Property {
             Property::PercentComplete | Property::Priority | Property::Sequence => {
                 match splitted_line.1.to_string().parse() {
                     Ok(integer) => ParserResult::Integer(integer),
-                    Err(_) => return Err(ICSError::UnableToParseProperty),
+                    Err(_) => {
+                        return Err(ICSError::UnableToParseProperty(property_name.to_string()))
+                    }
                 }
             }
 
@@ -247,23 +277,31 @@ impl Property {
                 // Get the two floats
                 let (lat, long) = match splitted_line.1.split_once(';') {
                     Some(values) => values,
-                    None => return Err(ICSError::UnableToParseProperty),
+                    None => return Err(ICSError::UnableToParseProperty(property_name.to_string())),
                 };
                 let float_lat: f32 = match lat.to_string().parse() {
                     Ok(val) => val,
-                    Err(_) => return Err(ICSError::UnableToParseProperty),
+                    Err(_) => {
+                        return Err(ICSError::UnableToParseProperty(property_name.to_string()))
+                    }
                 };
                 let float_long: f32 = match long.to_string().parse() {
                     Ok(val) => val,
-                    Err(_) => return Err(ICSError::UnableToParseProperty),
+                    Err(_) => {
+                        return Err(ICSError::UnableToParseProperty(property_name.to_string()))
+                    }
                 };
 
                 if !(-90. ..=90.).contains(&float_lat) {
-                    return Err(ICSError::PropertyConditionNotRespected);
+                    return Err(ICSError::PropertyConditionNotRespected(
+                        property_name.to_string(),
+                    ));
                 }
 
                 if !(-180. ..=180.).contains(&float_long) {
-                    return Err(ICSError::PropertyConditionNotRespected);
+                    return Err(ICSError::PropertyConditionNotRespected(
+                        property_name.to_string(),
+                    ));
                 }
 
                 ParserResult::Geo(float_lat, float_long)
@@ -450,6 +488,26 @@ fn all_properties_properly_recognised() {
     assert_eq!(property, Property::Resources);
 
     let (property, value) =
+        Property::parse_property("PRODID:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::ProdID);
+
+    let (property, value) =
+        Property::parse_property("VERSION:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::Version);
+
+    let (property, value) =
+        Property::parse_property("CALSCALE:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::CalScale);
+
+    let (property, value) =
+        Property::parse_property("METHOD:This is a description".to_string()).unwrap();
+    assert_eq!(String::from(value), "This is a description".to_string());
+    assert_eq!(property, Property::Method);
+
+    let (property, value) =
         Property::parse_property("CATEGORIES:This is a description".to_string()).unwrap();
     assert_eq!(<Vec<String>>::from(value), vec!["This is a description"]);
     assert_eq!(property, Property::Categories);
@@ -497,7 +555,7 @@ fn string_parsing_cases() {
 
     // Unknown property
     let result = Property::parse_property("SDQ:content".to_string());
-    assert_eq!(result, Err(ICSError::UknownProperty));
+    assert_eq!(result, Err(ICSError::UknownProperty("SDQ".to_string())));
 }
 
 #[ignore]
@@ -531,19 +589,19 @@ fn cal_address_parsing_cases() {
 fn geo_parsing_cases() {
     assert_eq!(
         Property::parse_property("GEO:92.386013;122.082932".to_string()).unwrap_err(),
-        ICSError::PropertyConditionNotRespected
+        ICSError::PropertyConditionNotRespected("GEO".to_string())
     );
     assert_eq!(
         Property::parse_property("GEO:-92.386013;122.082932".to_string()).unwrap_err(),
-        ICSError::PropertyConditionNotRespected
+        ICSError::PropertyConditionNotRespected("GEO".to_string())
     );
     assert_eq!(
         Property::parse_property("GEO:82.386013;192.082932".to_string()).unwrap_err(),
-        ICSError::PropertyConditionNotRespected
+        ICSError::PropertyConditionNotRespected("GEO".to_string())
     );
     assert_eq!(
         Property::parse_property("GEO:82.386013;-192.082932".to_string()).unwrap_err(),
-        ICSError::PropertyConditionNotRespected
+        ICSError::PropertyConditionNotRespected("GEO".to_string())
     );
 }
 
@@ -552,7 +610,7 @@ fn date_time_parsing_cases() {
     // Random bad value
     assert_eq!(
         Property::parse_property("DTSTAMP:QSDSD".to_string()).unwrap_err(),
-        ICSError::PropertyConditionNotRespected
+        ICSError::PropertyConditionNotRespected("DTSTAMP".to_string())
     );
 
     // Able to read date_time

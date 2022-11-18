@@ -59,9 +59,6 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-use chrono::{DateTime, FixedOffset, TimeZone};
-use chrono_tz::Tz;
-
 use crate::ics_error::ICSError;
 use crate::properties::Property;
 use crate::utils;
@@ -118,19 +115,14 @@ impl VCalendar {
         let mut line_reader = buf_reader.lines();
         let mut vcal_object = VCalendar::new_empty();
 
-        loop {
-            let mut current_line = match line_reader.next() {
-                Some(result) => match result {
-                    Ok(line) => line,
-                    Err(e) => return Err(ICSError::ReadError),
-                },
-                None => return Err(ICSError::NoBegin),
-            };
-
-            if current_line.starts_with("BEGIN:VCALENDAR") {
-                break;
-            }
-        }
+        // Find first BEGIN:VCALENDAR
+        let mut current_line = match line_reader.next() {
+            Some(result) => match result {
+                Ok(line) => line,
+                Err(e) => return Err(ICSError::ReadError),
+            },
+            None => return Err(ICSError::NoBegin),
+        };
 
         let mut current_line: Option<Result<String, std::io::Error>> = line_reader.next();
 
@@ -148,17 +140,85 @@ impl VCalendar {
                 }
                 None => return Err(ICSError::BeginWithoutEnd),
             }
-
             // Here we need to be able to process multi line arguments.
             let property_string: String;
             (property_string, current_line) =
                 utils::process_multi_line_property(processed_line, &mut line_reader);
 
+            if property_string.starts_with("BEGIN") {
+                let begin_val: &str = match property_string.split_once(':') {
+                    Some((_, l)) => l,
+                    None => return Err(ICSError::InvalidBeginLine(property_string)),
+                };
+
+                match begin_val {
+                    "VTODO" => {
+                        match (
+                            &vcal_object.vevent,
+                            &vcal_object.vjournal,
+                            &vcal_object.vtodo,
+                        ) {
+                            (None, None, None) => {
+                                vcal_object.vtodo =
+                                    Some(VTodo::parse_from_bufreader(&mut line_reader)?)
+                            }
+                            // You should only have on Component in a VCALENDAR
+                            _ => {
+                                return Err(ICSError::DuplicateUniqueProperty(
+                                    begin_val.to_string(),
+                                ))
+                            }
+                        }
+                    }
+                    "VEVENT" => {
+                        match (
+                            &vcal_object.vevent,
+                            &vcal_object.vjournal,
+                            &vcal_object.vtodo,
+                        ) {
+                            (None, None, None) => {
+                                vcal_object.vevent =
+                                    Some(VEvent::parse_from_bufreader(&mut line_reader)?)
+                            }
+                            // You should only have on Component in a VCALENDAR
+                            _ => {
+                                return Err(ICSError::DuplicateUniqueProperty(
+                                    begin_val.to_string(),
+                                ))
+                            }
+                        }
+                    }
+                    "VJOURNAL" => {
+                        match (
+                            &vcal_object.vevent,
+                            &vcal_object.vjournal,
+                            &vcal_object.vtodo,
+                        ) {
+                            (None, None, None) => {
+                                vcal_object.vjournal =
+                                    Some(VJournal::parse_from_bufreader(&mut line_reader)?)
+                            }
+                            // You should only have on Component in a VCALENDAR
+                            _ => {
+                                return Err(ICSError::DuplicateUniqueProperty(
+                                    begin_val.to_string(),
+                                ))
+                            }
+                        }
+                    }
+
+                    _ => return Err(ICSError::UnknownComponent(begin_val.to_string())),
+                }
+            }
+
             let (property, value) = Property::parse_property(property_string)?;
         }
 
-        if !has_prod_id || !has_version {
-            return Err(ICSError::MissingNecessaryProperty);
+        if !has_prod_id {
+            return Err(ICSError::MissingNecessaryProperty("PRODID".to_string()));
+        }
+        if !has_version {
+            return Err(ICSError::MissingNecessaryProperty("VERSION".to_string()));
         }
 
         Ok(vcal_object)

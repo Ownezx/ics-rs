@@ -192,39 +192,53 @@ impl VTodo {
             (property_string, current_line) =
                 utils::process_multi_line_property(processed_line, line_reader);
 
-            let (property, value) = Property::parse_property(property_string)?;
+            // I clone the line here to avoid borrowing it as I might give it to an error.
+            // This is probably slow but let's leave that problem for future smarter me.
+            let (property, value) = Property::parse_property(property_string.clone())?;
 
             match property {
                 Property::DTStamp => {
                     if has_dtstamp {
-                        return Err(ICSError::DuplicateUniqueProperty);
+                        return Err(ICSError::DuplicateUniqueProperty(property_string));
                     }
                     has_dtstamp = true;
                     vtodo.dtstamp = value.try_into().unwrap();
                 }
-                Property::Completed => utils::apply_unique_property(&mut vtodo.completed, value)?,
-                Property::Created => utils::apply_unique_property(&mut vtodo.created, value)?,
-                Property::DTStart => utils::apply_unique_property(&mut vtodo.dtstart, value)?,
+                Property::Completed => {
+                    utils::apply_unique_property(&mut vtodo.completed, value, property_string)?
+                }
+                Property::Created => {
+                    utils::apply_unique_property(&mut vtodo.created, value, property_string)?
+                }
+                Property::DTStart => {
+                    utils::apply_unique_property(&mut vtodo.dtstart, value, property_string)?
+                }
                 Property::LastModified => {
-                    utils::apply_unique_property(&mut vtodo.last_modified, value)?
+                    utils::apply_unique_property(&mut vtodo.last_modified, value, property_string)?
                 }
                 Property::RecurrenceID => todo!(),
                 Property::ExDate => vtodo.exdate.push(value.try_into().unwrap()),
                 Property::RDate => vtodo.rdate.push(value.try_into().unwrap()),
-                Property::Due => utils::apply_unique_property(&mut vtodo.due, value)?,
+                Property::Due => {
+                    utils::apply_unique_property(&mut vtodo.due, value, property_string)?
+                }
                 Property::Duration => todo!(),
                 Property::UID => {
                     if has_uid {
-                        return Err(ICSError::DuplicateUniqueProperty);
+                        return Err(ICSError::DuplicateUniqueProperty(property_string));
                     }
                     has_uid = true;
                     vtodo.uid = value.try_into().unwrap();
                 }
                 Property::Description => {
-                    utils::apply_unique_property(&mut vtodo.description, value)?
+                    utils::apply_unique_property(&mut vtodo.description, value, property_string)?
                 }
-                Property::Location => utils::apply_unique_property(&mut vtodo.location, value)?,
-                Property::Summary => utils::apply_unique_property(&mut vtodo.summary, value)?,
+                Property::Location => {
+                    utils::apply_unique_property(&mut vtodo.location, value, property_string)?
+                }
+                Property::Summary => {
+                    utils::apply_unique_property(&mut vtodo.summary, value, property_string)?
+                }
                 Property::Comment => vtodo.comment.push(value.try_into().unwrap()),
                 Property::RelatedTo => vtodo.related_to.push(value.try_into().unwrap()),
                 Property::Resources => vtodo.resources.push(value.try_into().unwrap()),
@@ -236,29 +250,41 @@ impl VTodo {
                 Property::Attendee => todo!(),
                 Property::Contact => todo!(),
                 Property::PercentComplete => {
-                    utils::apply_unique_property(&mut vtodo.percent, value)?
+                    utils::apply_unique_property(&mut vtodo.percent, value, property_string)?
                 }
-                Property::Priority => utils::apply_unique_property(&mut vtodo.priority, value)?,
-                Property::Sequence => utils::apply_unique_property(&mut vtodo.sequence, value)?,
+                Property::Priority => {
+                    utils::apply_unique_property(&mut vtodo.priority, value, property_string)?
+                }
+                Property::Sequence => {
+                    utils::apply_unique_property(&mut vtodo.sequence, value, property_string)?
+                }
                 Property::Status => {
                     if vtodo.status.is_some() {
-                        return Err(ICSError::DuplicateUniqueProperty);
+                        return Err(ICSError::DuplicateUniqueProperty(property_string));
                     }
                     let status: Status = value.try_into().unwrap();
                     if !status.validate_vtodo() {
-                        return Err(ICSError::PropertyConditionNotRespected);
+                        return Err(ICSError::PropertyConditionNotRespected(property_string));
                     }
                     vtodo.status = Some(status);
                 }
                 Property::URL => todo!(),
                 Property::Attach => todo!(),
-                Property::Geo => utils::apply_unique_property(&mut vtodo.geo, value)?,
-                Property::Class => utils::apply_unique_property(&mut vtodo.class, value)?,
+                Property::Geo => {
+                    utils::apply_unique_property(&mut vtodo.geo, value, property_string)?
+                }
+                Property::Class => {
+                    utils::apply_unique_property(&mut vtodo.class, value, property_string)?
+                }
+                _ => return Err(ICSError::UnexpectedProperty(property_string)), // Other properties are not used
             }
         }
 
-        if !has_uid || !has_dtstamp {
-            return Err(ICSError::MissingNecessaryProperty);
+        if !has_uid {
+            return Err(ICSError::MissingNecessaryProperty("UID".to_string()));
+        }
+        if !has_dtstamp {
+            return Err(ICSError::MissingNecessaryProperty("DTSTAMP".to_string()));
         }
 
         Ok(vtodo)
@@ -405,7 +431,10 @@ fn vtodo_duplicate_variable() {
             i += 1;
             println!("Processing vtodo number {i}");
             let error = VTodo::parse_from_bufreader(&mut lines).unwrap_err();
-            assert_eq!(error, ICSError::DuplicateUniqueProperty);
+            match error {
+                ICSError::DuplicateUniqueProperty(_) => {}
+                _ => panic!("Did not get a duplicate unique property"),
+            }
             current_line = lines.next();
         } else {
             current_line = lines.next();
