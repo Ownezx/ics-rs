@@ -125,7 +125,7 @@ impl VCalendar {
         match line_reader.next() {
             Some(result) => match result {
                 Ok(line) => line,
-                Err(e) => return Err(ICSError::ReadError),
+                Err(_) => return Err(ICSError::ReadError),
             },
             None => return Err(ICSError::NoBegin),
         };
