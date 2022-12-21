@@ -367,6 +367,11 @@ fn vtodo_read_example_2() {
         "Submit Revised Internet-Draft".to_string()
     );
 
+    assert_eq!(
+        vtodo.description.unwrap(),
+        "This is a multi line description in order to test the multi line code".to_string()
+    );
+
     assert_eq!(vtodo.priority.unwrap(), 1);
     assert_eq!(vtodo.status.unwrap(), Status::NeedsAction);
 }

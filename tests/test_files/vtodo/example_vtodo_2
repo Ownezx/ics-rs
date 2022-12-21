@@ -5,6 +5,8 @@ DTSTART:20070514T110000Z
 DUE:20070709T130000Z
 COMPLETED:20070707T100000Z
 SUMMARY:Submit Revised Internet-Draft
+DESCRIPTION:This is a multi line 
+ description in order to test the multi line code
 PRIORITY:1
 STATUS:NEEDS-ACTION
 END:VTODO
