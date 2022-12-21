@@ -6,8 +6,9 @@ use chrono::{DateTime, Duration, FixedOffset};
 
 use crate::ics_error::ICSError;
 
-use self::{class::Class, status::Status};
+use self::{action::Action, class::Class, status::Status};
 
+pub mod action;
 pub mod cal_adress;
 pub mod class;
 pub mod status;
@@ -49,6 +50,8 @@ const PROPERTY_IDENTIFIER: &[&str] = &[
     "SEQUENCE",
     // Status
     "STATUS",
+    // Action
+    "ACTION",
     // URI
     "URL",
     "ATTACH",
@@ -123,6 +126,9 @@ pub enum Property {
 
     // Status,
     Status,
+
+    // Status,
+    Action,
 
     // URI properties
     URL,
@@ -271,6 +277,8 @@ impl Property {
 
             Property::Status => ParserResult::Status(Status::from_str(splitted_line.1)?),
 
+            Property::Action => ParserResult::Action(Action::from_str(splitted_line.1)?),
+
             Property::URL | Property::Attach => todo!(),
 
             Property::Geo => {
@@ -322,6 +330,7 @@ pub enum ParserResult {
     Duration(Duration),
     Integer(usize),
     Status(Status),
+    Action(Action),
     Class(Class),
     Geo(f32, f32),
 }
@@ -393,6 +402,15 @@ impl From<ParserResult> for Vec<String> {
     fn from(result: ParserResult) -> Self {
         match result {
             ParserResult::Strings(val) => val,
+            _ => panic!("Not casting the right result"),
+        }
+    }
+}
+
+impl From<ParserResult> for Action {
+    fn from(result: ParserResult) -> Self {
+        match result {
+            ParserResult::Action(val) => val,
             _ => panic!("Not casting the right result"),
         }
     }
@@ -530,6 +548,11 @@ fn all_properties_properly_recognised() {
     assert_eq!(Status::from(value), Status::Completed);
     assert_eq!(property, Property::Status);
 
+    // Action
+    let (property, value) = Property::parse_property("ACTION:DISPLAY".to_string()).unwrap();
+    assert_eq!(Action::from(value), Action::Display);
+    assert_eq!(property, Property::Action);
+
     // Class
     let (property, value) = Property::parse_property("CLASS:PUBLIC".to_string()).unwrap();
     assert_eq!(Class::from(value), Class::PUBLIC);
@@ -608,6 +631,36 @@ fn geo_parsing_cases() {
     assert_eq!(
         Property::parse_property("GEO:82.386013;-192.082932".to_string()).unwrap_err(),
         ICSError::PropertyConditionNotRespected("GEO".to_string())
+    );
+}
+
+#[test]
+fn action_parsing_cases() {
+    assert_eq!(
+        Action::from(
+            Property::parse_property("ACTION:DISPLAY".to_string())
+                .unwrap()
+                .1
+        ),
+        Action::Display
+    );
+
+    assert_eq!(
+        Action::from(
+            Property::parse_property("ACTION:EMAIL".to_string())
+                .unwrap()
+                .1
+        ),
+        Action::Email
+    );
+
+    assert_eq!(
+        Action::from(
+            Property::parse_property("ACTION:AUDIO".to_string())
+                .unwrap()
+                .1
+        ),
+        Action::Audio
     );
 }
 
