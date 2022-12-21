@@ -305,16 +305,12 @@ fn vtodo_read_example_1() {
     assert_eq!(vtodo.uid, "20070313T123432Z-456553@example.com");
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2007, 3, 13)
-        .unwrap()
-        .and_hms_opt(12, 34, 32)
+        .with_ymd_and_hms(2007, 3, 13, 12, 34, 32)
         .unwrap();
     assert_eq!(vtodo.dtstamp, expected_date);
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2007, 5, 1)
-        .unwrap()
-        .and_hms_opt(0, 0, 0)
+        .with_ymd_and_hms(2007, 5, 1, 0, 0, 0)
         .unwrap();
     assert_eq!(vtodo.due.unwrap(), expected_date);
     assert_eq!(
@@ -340,25 +336,19 @@ fn vtodo_read_example_2() {
     assert_eq!(vtodo.uid, "20070514T103211Z-123404@example.com");
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2007, 5, 14)
-        .unwrap()
-        .and_hms_opt(10, 32, 11)
+        .with_ymd_and_hms(2007, 5, 14, 10, 32, 11)
         .unwrap();
     assert_eq!(vtodo.dtstamp, expected_date);
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2007, 5, 14)
-        .unwrap()
-        .and_hms_opt(11, 0, 0)
+        .with_ymd_and_hms(2007, 5, 14, 11, 0, 0)
         .unwrap();
     assert_eq!(vtodo.dtstart.unwrap(), expected_date);
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2007, 7, 7)
-        .unwrap()
-        .and_hms_opt(10, 0, 0)
+        .with_ymd_and_hms(2007, 7, 7, 10, 0, 0)
         .unwrap();
     assert_eq!(vtodo.completed.unwrap(), expected_date);
 
@@ -391,25 +381,19 @@ fn vtodo_read_example_3() {
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(1997, 9, 1)
-        .unwrap()
-        .and_hms_opt(13, 0, 0)
+        .with_ymd_and_hms(1997, 9, 1, 13, 0, 0)
         .unwrap();
     assert_eq!(vtodo.dtstamp, expected_date);
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(1997, 4, 15)
-        .unwrap()
-        .and_hms_opt(13, 30, 0)
+        .with_ymd_and_hms(1997, 4, 15, 13, 30, 0)
         .unwrap();
     assert_eq!(vtodo.dtstart.unwrap(), expected_date);
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(1997, 4, 16)
-        .unwrap()
-        .and_hms_opt(4, 59, 59)
+        .with_ymd_and_hms(1997, 4, 16, 4, 59, 59)
         .unwrap();
     assert_eq!(vtodo.due.unwrap(), expected_date);
 

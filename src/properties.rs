@@ -421,9 +421,7 @@ fn all_properties_properly_recognised() {
     // Date/Datetime
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2007, 3, 13)
-        .unwrap()
-        .and_hms_opt(12, 34, 32)
+        .with_ymd_and_hms(2007, 3, 13, 12, 34, 32)
         .unwrap();
 
     let (property, value) =
@@ -675,9 +673,7 @@ fn date_time_parsing_cases() {
     // Able to read date_time
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2007, 3, 13)
-        .unwrap()
-        .and_hms_opt(12, 34, 32)
+        .with_ymd_and_hms(2007, 3, 13, 12, 34, 32)
         .unwrap();
 
     let (_, value) = Property::parse_property("DTSTAMP:20070313T123432Z".to_string()).unwrap();
@@ -685,12 +681,16 @@ fn date_time_parsing_cases() {
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2007, 5, 1)
-        .unwrap()
-        .and_hms_opt(0, 0, 0)
+        .with_ymd_and_hms(2007, 5, 1, 0, 0, 0)
         .unwrap();
     let (_, value) = Property::parse_property("DUE;VALUE=DATE:20070501".to_string()).unwrap();
     assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
+}
+
+#[ignore]
+#[test]
+fn duration_test_cases() {
+    todo!();
 }
 
 #[ignore]

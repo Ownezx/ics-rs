@@ -273,25 +273,19 @@ fn vtodo_example_1() {
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2022, 11, 17)
-        .unwrap()
-        .and_hms_opt(19, 55, 32)
+        .with_ymd_and_hms(2022, 11, 17, 19, 55, 32)
         .unwrap();
     assert_eq!(vtodo.created.unwrap(), expected_date);
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2022, 11, 17)
-        .unwrap()
-        .and_hms_opt(19, 55, 38)
+        .with_ymd_and_hms(2022, 11, 17, 19, 55, 38)
         .unwrap();
     assert_eq!(vtodo.dtstamp, expected_date);
 
     let expected_date = FixedOffset::east_opt(0)
         .unwrap()
-        .ymd_opt(2022, 11, 17)
-        .unwrap()
-        .and_hms_opt(19, 55, 32)
+        .with_ymd_and_hms(2022, 11, 17, 19, 55, 32)
         .unwrap();
     assert_eq!(vtodo.last_modified.unwrap(), expected_date);
 
