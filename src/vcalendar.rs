@@ -60,11 +60,17 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use crate::ics_error::ICSError;
+
 use crate::properties::Property;
 use crate::utils;
 use crate::vevent::VEvent;
 use crate::vjournal::VJournal;
 use crate::vtodo::VTodo;
+
+#[cfg(test)]
+use crate::properties::status::Status;
+#[cfg(test)]
+use chrono::{FixedOffset, TimeZone};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -116,7 +122,7 @@ impl VCalendar {
         let mut vcal_object = VCalendar::new_empty();
 
         // Find first BEGIN:VCALENDAR
-        let mut current_line = match line_reader.next() {
+        match line_reader.next() {
             Some(result) => match result {
                 Ok(line) => line,
                 Err(e) => return Err(ICSError::ReadError),
@@ -141,77 +147,92 @@ impl VCalendar {
                 None => return Err(ICSError::BeginWithoutEnd),
             }
             // Here we need to be able to process multi line arguments.
-            let property_string: String;
-            (property_string, current_line) =
-                utils::process_multi_line_property(processed_line, &mut line_reader);
 
-            if property_string.starts_with("BEGIN") {
-                let begin_val: &str = match property_string.split_once(':') {
+            if processed_line.starts_with("BEGIN") {
+                let begin_val: &str = match processed_line.split_once(':') {
                     Some((_, l)) => l,
-                    None => return Err(ICSError::InvalidBeginLine(property_string)),
+                    None => return Err(ICSError::InvalidBeginLine(processed_line)),
                 };
 
                 match begin_val {
                     "VTODO" => {
-                        match (
-                            &vcal_object.vevent,
-                            &vcal_object.vjournal,
-                            &vcal_object.vtodo,
-                        ) {
-                            (None, None, None) => {
-                                vcal_object.vtodo =
-                                    Some(VTodo::parse_from_bufreader(&mut line_reader)?)
-                            }
-                            // You should only have on Component in a VCALENDAR
-                            _ => {
-                                return Err(ICSError::DuplicateUniqueProperty(
-                                    begin_val.to_string(),
-                                ))
-                            }
+                        if vcal_object.vtodo.is_some() {
+                            return Err(ICSError::DuplicateUniqueProperty(begin_val.to_string()));
                         }
+                        vcal_object.vtodo = Some(VTodo::parse_from_bufreader(&mut line_reader)?);
                     }
                     "VEVENT" => {
-                        match (
-                            &vcal_object.vevent,
-                            &vcal_object.vjournal,
-                            &vcal_object.vtodo,
-                        ) {
-                            (None, None, None) => {
-                                vcal_object.vevent =
-                                    Some(VEvent::parse_from_bufreader(&mut line_reader)?)
-                            }
-                            // You should only have on Component in a VCALENDAR
-                            _ => {
-                                return Err(ICSError::DuplicateUniqueProperty(
-                                    begin_val.to_string(),
-                                ))
-                            }
+                        if vcal_object.vevent.is_some() {
+                            return Err(ICSError::DuplicateUniqueProperty(begin_val.to_string()));
                         }
+                        vcal_object.vevent = Some(VEvent::parse_from_bufreader(&mut line_reader)?);
                     }
                     "VJOURNAL" => {
-                        match (
-                            &vcal_object.vevent,
-                            &vcal_object.vjournal,
-                            &vcal_object.vtodo,
-                        ) {
-                            (None, None, None) => {
-                                vcal_object.vjournal =
-                                    Some(VJournal::parse_from_bufreader(&mut line_reader)?)
-                            }
-                            // You should only have on Component in a VCALENDAR
-                            _ => {
-                                return Err(ICSError::DuplicateUniqueProperty(
-                                    begin_val.to_string(),
-                                ))
-                            }
+                        if vcal_object.vjournal.is_some() {
+                            return Err(ICSError::DuplicateUniqueProperty(begin_val.to_string()));
                         }
+                        vcal_object.vjournal =
+                            Some(VJournal::parse_from_bufreader(&mut line_reader)?);
                     }
-
                     _ => return Err(ICSError::UnknownComponent(begin_val.to_string())),
                 }
+
+                // Consume next line as we have finished the VTODO
+                current_line = line_reader.next();
+                continue;
             }
 
-            let (property, value) = Property::parse_property(property_string)?;
+            let property_string: String;
+            (property_string, current_line) =
+                utils::process_multi_line_property(processed_line, &mut line_reader);
+
+            // I clone the line here to avoid borrowing it as I might give it to an error.
+            // This is probably slow but let's leave that problem for future smarter me.
+            let (property, value) = Property::parse_property(property_string.clone())?;
+            match property {
+                Property::ProdID => {
+                    if has_prod_id {
+                        return Err(ICSError::DuplicateUniqueProperty(property_string));
+                    }
+                    has_prod_id = true;
+                    vcal_object.prodid = value.try_into().unwrap();
+                }
+                Property::Version => {
+                    if has_version {
+                        return Err(ICSError::DuplicateUniqueProperty(property_string));
+                    }
+                    has_version = true;
+                    vcal_object.version = value.try_into().unwrap();
+                }
+                Property::CalScale => {
+                    utils::apply_unique_property(&mut vcal_object.calscale, value, property_string)?
+                }
+                Property::Method => {
+                    utils::apply_unique_property(&mut vcal_object.method, value, property_string)?
+                }
+                _ => return Err(ICSError::UnexpectedProperty(property_string)), // Other properties are not used
+            }
+        }
+
+        // Verify duplicate property
+        match (
+            &vcal_object.vevent,
+            &vcal_object.vjournal,
+            &vcal_object.vtodo,
+        ) {
+            (None, None, Some(_)) => {}
+            (None, Some(_), None) => {}
+            (Some(_), None, None) => {}
+            (None, None, None) => {
+                return Err(ICSError::MissingNecessaryProperty(
+                    "VTODO, VCALENDAR, VJOURNAL".to_string(),
+                ))
+            }
+            (_, _, _) => {
+                return Err(ICSError::DuplicateUniqueProperty(
+                    "VTODO, VCALENDAR, VJOURNAL".to_string(),
+                ))
+            }
         }
 
         if !has_prod_id {
@@ -244,9 +265,60 @@ fn ics_extention_verification() {
 }
 
 #[test]
-fn vtodo_parse_validation() {
+fn vtodo_example_1() {
     let vcal_object =
         VCalendar::load_vcal_from_file(Path::new("./tests/test_files/vtodo/example2.ics")).unwrap();
+
+    let vtodo = vcal_object.vtodo.unwrap();
+
+    let expected_date = FixedOffset::east_opt(0)
+        .unwrap()
+        .ymd_opt(2022, 11, 17)
+        .unwrap()
+        .and_hms_opt(19, 55, 32)
+        .unwrap();
+    assert_eq!(vtodo.created.unwrap(), expected_date);
+
+    let expected_date = FixedOffset::east_opt(0)
+        .unwrap()
+        .ymd_opt(2022, 11, 17)
+        .unwrap()
+        .and_hms_opt(19, 55, 38)
+        .unwrap();
+    assert_eq!(vtodo.dtstamp, expected_date);
+
+    let expected_date = FixedOffset::east_opt(0)
+        .unwrap()
+        .ymd_opt(2022, 11, 17)
+        .unwrap()
+        .and_hms_opt(19, 55, 32)
+        .unwrap();
+    assert_eq!(vtodo.last_modified.unwrap(), expected_date);
+
+    assert_eq!(vtodo.status.unwrap(), Status::NeedsAction);
+    assert_eq!(vtodo.summary.unwrap(), "test".to_string());
+
+    assert_eq!(
+        vtodo.uid,
+        "F01AAFD6-686E-4FD7-8A94-9D7EB876A6F6".to_string()
+    );
+}
+
+#[ignore]
+#[test]
+fn missing_properties() {
+    // No VTODO,VEVENT,VCALENDAR
+    // No ProdID
+    // No Version
+    todo!();
+}
+
+#[ignore]
+#[test]
+fn duplicate_unique_properties() {
+    // Two VTODO, VEVENT, VCALENDAR
+    // One VTODO and andother ... Etc
+    todo!();
 }
 
 #[ignore]

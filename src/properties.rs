@@ -560,6 +560,12 @@ fn string_parsing_cases() {
 
 #[ignore]
 #[test]
+fn wrong_calscale() {
+    let (property, value) = Property::parse_property("CALSCALE:Wrong".to_string()).unwrap();
+}
+
+#[ignore]
+#[test]
 fn cal_address_parsing_cases() {
     let (property, value) =
         Property::parse_property("ORGANIZER:MAILTO:jane_doe@host.com".to_string()).unwrap();
