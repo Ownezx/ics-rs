@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{ops::Add, str::FromStr};
 
 #[cfg(test)]
 use chrono::TimeZone;
@@ -238,7 +238,87 @@ impl Property {
                 ParserResult::DateTime(date_time)
             }
             // Duration property
-            Property::Duration => todo!(),
+            Property::Duration => {
+                // Because the duration cannot include months or years
+                // it's analog to a duration in time
+                let mut temp_string = String::from(splitted_line.1);
+                // Create are 0 duration before adding more to it.
+                let mut duration: Duration = Duration::days(0);
+
+                // Check if we start by P
+                if !temp_string.starts_with('P') {
+                    return Err(ICSError::PropertyConditionNotRespected(
+                        property_name.to_string(),
+                    ));
+                }
+                // Remove P
+                temp_string.remove(0);
+                // Try to find week
+                let split = temp_string.split_once('W');
+                // Add it if it's there
+                if let Some(vec) = split {
+                    duration = duration.add(Duration::weeks(
+                        vec.0.to_string().parse::<i32>().unwrap().into(),
+                    ));
+                    temp_string = vec.1.to_string();
+                }
+
+                // Try to find days
+                let split = temp_string.split_once('D');
+                // Add it if it's there
+                if let Some(vec) = split {
+                    duration = duration.add(Duration::days(
+                        vec.0.to_string().parse::<i32>().unwrap().into(),
+                    ));
+                    temp_string = vec.1.to_string();
+                }
+
+                // Try to find A time
+                let split = temp_string.split_once('T');
+                // Add it if it's there
+                if let Some(vec) = split {
+                    temp_string = vec.1.to_string();
+
+                    // Try to find hours
+                    let split = temp_string.split_once('H');
+                    // Add it if it's there
+                    if let Some(vec) = split {
+                        duration = duration.add(Duration::hours(
+                            vec.0.to_string().parse::<i32>().unwrap().into(),
+                        ));
+                        temp_string = vec.1.to_string();
+                    }
+
+                    // Try to find minutes
+                    let split = temp_string.split_once('M');
+                    // Add it if it's there
+                    if let Some(vec) = split {
+                        duration = duration.add(Duration::minutes(
+                            vec.0.to_string().parse::<i32>().unwrap().into(),
+                        ));
+                        temp_string = vec.1.to_string();
+                    }
+
+                    // Try to find seconds
+                    let split = temp_string.split_once('S');
+                    // Add it if it's there
+                    if let Some(vec) = split {
+                        duration = duration.add(Duration::seconds(
+                            vec.0.to_string().parse::<i32>().unwrap().into(),
+                        ));
+                        temp_string = vec.1.to_string();
+                    }
+                }
+
+                // Verify that the string is completely eaten
+                if !temp_string.is_empty() {
+                    return Err(ICSError::PropertyConditionNotRespected(
+                        property_name.to_string(),
+                    ));
+                }
+
+                ParserResult::Duration(duration)
+            }
             // String identifier
             // We might want to add a specific validator for UID
             Property::UID
@@ -467,6 +547,11 @@ fn all_properties_properly_recognised() {
     assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
     assert_eq!(property, Property::Due);
 
+    // Duration
+    let (property, value) = Property::parse_property("DURATION:P1W".to_string()).unwrap();
+    assert_eq!(Duration::from(value), Duration::weeks(1));
+    assert_eq!(property, Property::Duration);
+
     // String properties
     let (property, value) =
         Property::parse_property("UID:This is a description".to_string()).unwrap();
@@ -630,6 +715,28 @@ fn geo_parsing_cases() {
         Property::parse_property("GEO:82.386013;-192.082932".to_string()).unwrap_err(),
         ICSError::PropertyConditionNotRespected("GEO".to_string())
     );
+}
+
+#[test]
+fn duration_parsing_cases() {
+    let (property, value) = Property::parse_property("DURATION:P15DT5H0M20S".to_string()).unwrap();
+    assert_eq!(
+        Duration::from(value),
+        Duration::seconds(15 * 24 * 60 * 60 + 5 * 60 * 60 + 20)
+    );
+    assert_eq!(property, Property::Duration);
+
+    let (property, value) = Property::parse_property("DURATION:P7W".to_string()).unwrap();
+    assert_eq!(Duration::from(value), Duration::weeks(7));
+    assert_eq!(property, Property::Duration);
+
+    let (property, value) = Property::parse_property("DURATION:PT1H0M0S".to_string()).unwrap();
+    assert_eq!(Duration::from(value), Duration::hours(1));
+    assert_eq!(property, Property::Duration);
+
+    let (property, value) = Property::parse_property("DURATION:PT15M".to_string()).unwrap();
+    assert_eq!(Duration::from(value), Duration::minutes(15));
+    assert_eq!(property, Property::Duration);
 }
 
 #[test]
