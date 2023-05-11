@@ -245,20 +245,40 @@ impl Property {
                 // Create are 0 duration before adding more to it.
                 let mut duration: Duration = Duration::days(0);
 
-                // Check if we start by P
-                if !temp_string.starts_with('P') {
-                    return Err(ICSError::PropertyConditionNotRespected(
-                        property_name.to_string(),
-                    ));
+                let mut factor: i64 = 1;
+
+                // Try to the negative
+                let split = temp_string.split_once('P');
+                // verify that the start of the string is correct
+                match split {
+                    Some(vec) => {
+                        match (!vec.0.is_empty(), vec.0.starts_with('-')) {
+                            // We are negative
+                            (true, true) => factor = -1,
+                            // We are starting with the wrong character
+                            (true, false) => {
+                                return Err(ICSError::PropertyConditionNotRespected(
+                                    property_name.to_string(),
+                                ))
+                            }
+                            (_, _) => {}
+                        }
+                        temp_string = vec.1.to_string();
+                    }
+                    None => {
+                        return Err(ICSError::PropertyConditionNotRespected(
+                            property_name.to_string(),
+                        ))
+                    }
                 }
-                // Remove P
-                temp_string.remove(0);
+
                 // Try to find week
                 let split = temp_string.split_once('W');
                 // Add it if it's there
                 if let Some(vec) = split {
                     duration = duration.add(Duration::weeks(
-                        vec.0.to_string().parse::<i32>().unwrap().into(),
+                        factor
+                            * <i32 as Into<i64>>::into(vec.0.to_string().parse::<i32>().unwrap()),
                     ));
                     temp_string = vec.1.to_string();
                 }
@@ -268,7 +288,8 @@ impl Property {
                 // Add it if it's there
                 if let Some(vec) = split {
                     duration = duration.add(Duration::days(
-                        vec.0.to_string().parse::<i32>().unwrap().into(),
+                        factor
+                            * <i32 as Into<i64>>::into(vec.0.to_string().parse::<i32>().unwrap()),
                     ));
                     temp_string = vec.1.to_string();
                 }
@@ -284,7 +305,10 @@ impl Property {
                     // Add it if it's there
                     if let Some(vec) = split {
                         duration = duration.add(Duration::hours(
-                            vec.0.to_string().parse::<i32>().unwrap().into(),
+                            factor
+                                * <i32 as Into<i64>>::into(
+                                    vec.0.to_string().parse::<i32>().unwrap(),
+                                ),
                         ));
                         temp_string = vec.1.to_string();
                     }
@@ -294,7 +318,10 @@ impl Property {
                     // Add it if it's there
                     if let Some(vec) = split {
                         duration = duration.add(Duration::minutes(
-                            vec.0.to_string().parse::<i32>().unwrap().into(),
+                            factor
+                                * <i32 as Into<i64>>::into(
+                                    vec.0.to_string().parse::<i32>().unwrap(),
+                                ),
                         ));
                         temp_string = vec.1.to_string();
                     }
@@ -304,7 +331,10 @@ impl Property {
                     // Add it if it's there
                     if let Some(vec) = split {
                         duration = duration.add(Duration::seconds(
-                            vec.0.to_string().parse::<i32>().unwrap().into(),
+                            factor
+                                * <i32 as Into<i64>>::into(
+                                    vec.0.to_string().parse::<i32>().unwrap(),
+                                ),
                         ));
                         temp_string = vec.1.to_string();
                     }
@@ -736,6 +766,10 @@ fn duration_parsing_cases() {
 
     let (property, value) = Property::parse_property("DURATION:PT15M".to_string()).unwrap();
     assert_eq!(Duration::from(value), Duration::minutes(15));
+    assert_eq!(property, Property::Duration);
+
+    let (property, value) = Property::parse_property("DURATION:-PT15M".to_string()).unwrap();
+    assert_eq!(Duration::from(value), Duration::minutes(-15));
     assert_eq!(property, Property::Duration);
 }
 
