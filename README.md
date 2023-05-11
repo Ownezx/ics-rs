@@ -6,6 +6,10 @@ This is ispired by the ics and ical-rs crates. It is meant to parse and validate
 
 In the long term, the crate should be able to adress VTODOs, VEVENTs, VALARMs and VJOURNAL entries in VCALENDAR files.
 
+## Testing
+
+Several test files can be found in the test/test_files folder, those were gathered from different sources to validate that the parsing is done correctly. To run tests use `cargo test`.
+
 ## Docs
 
 https://www.kanzaki.com/docs/ical/
