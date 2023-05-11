@@ -771,6 +771,16 @@ fn duration_parsing_cases() {
     let (property, value) = Property::parse_property("DURATION:-PT15M".to_string()).unwrap();
     assert_eq!(Duration::from(value), Duration::minutes(-15));
     assert_eq!(property, Property::Duration);
+
+    // Bad first character
+    assert_eq!(
+        Property::parse_property("DURATION:DPT15M".to_string()).unwrap_err(),
+        ICSError::PropertyConditionNotRespected("DURATION".to_string())
+    );
+    assert_eq!(
+        Property::parse_property("DURATION:-PJ".to_string()).unwrap_err(),
+        ICSError::PropertyConditionNotRespected("DURATION".to_string())
+    );
 }
 
 #[test]
