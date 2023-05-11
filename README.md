@@ -2,7 +2,9 @@
 
 ## Introduction
 
-This is ispired by the ics and ical-rs crates.
+This is ispired by the ics and ical-rs crates. It is meant to parse and validate as well as write ics files.
+
+In the long term, the crate should be able to adress VTODOs, VEVENTs, VALARMs and VJOURNAL entries in VCALENDAR files.
 
 ## Docs
 
