@@ -16,6 +16,8 @@ Several test files can be found in the test/test_files folder, those were gather
 - [ ] Reading VEVENT
 - [ ] Reading VJOURNAL
 - [ ] Reading VCALENDAR
+- [ ] X-Property support
+- [ ] Iana-Property support
 - [ ] Writing
 
 ## Docs
