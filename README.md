@@ -10,12 +10,20 @@ In the long term, the crate should be able to adress VTODOs, VEVENTs, VALARMs an
 
 Several test files can be found in the test/test_files folder, those were gathered from different sources to validate that the parsing is done correctly. To run tests use `cargo test`.
 
+## Features
+
+- [ ] Reading VTODO (Partially implemented)
+- [ ] Reading VEVENT
+- [ ] Reading VJOURNAL
+- [ ] Reading VCALENDAR
+- [ ] Writing
+
 ## Docs
 
-https://www.kanzaki.com/docs/ical/
+<https://www.kanzaki.com/docs/ical/>
 
-https://icalendar.org/RFC-Specifications/iCalendar-RFC-5545/
+<https://icalendar.org/RFC-Specifications/iCalendar-RFC-5545/>
 
-https://www.rfc-editor.org/rfc/rfc5545
+<https://www.rfc-editor.org/rfc/rfc5545>
 
-https://www.rfc-editor.org/rfc/rfc7986
+<https://www.rfc-editor.org/rfc/rfc7986>
