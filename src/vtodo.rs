@@ -161,7 +161,10 @@ impl VTodo {
         line_reader: &mut Lines<BufReader<File>>,
     ) -> Result<VTodo, ICSError> {
         let mut vtodo: VTodo = VTodo::new_empty(
-            DateTime::from_utc(Utc::now().naive_utc(), FixedOffset::east(0)),
+            DateTime::from_utc(
+                Utc::now().naive_utc(),
+                FixedOffset::east_opt(0).expect("FixedOffset::east out of bounds"),
+            ),
             "".to_string(),
         );
         let mut has_uid = false;
