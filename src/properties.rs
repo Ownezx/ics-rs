@@ -48,6 +48,7 @@ const PROPERTY_IDENTIFIER: &[&str] = &[
     "PERCENT-COMPLETE",
     "PRIORITY",
     "SEQUENCE",
+    "REPEAT",
     // Status
     "STATUS",
     // Action
@@ -58,6 +59,7 @@ const PROPERTY_IDENTIFIER: &[&str] = &[
     // Others
     "GEO",
     "CLASS",
+    "TRIGGER",
 ];
 
 // This was yoinked here : https://stackoverflow.com/questions/28028854/how-do-i-match-enum-values-with-an-integer
@@ -123,6 +125,7 @@ pub enum Property {
     PercentComplete,
     Priority,
     Sequence,
+    Repeat,
 
     // Status,
     Status,
@@ -137,6 +140,7 @@ pub enum Property {
     // Others
     Geo,
     Class,
+    Trigger,
 }
 }
 
@@ -352,6 +356,7 @@ impl Property {
             // String identifier
             // We might want to add a specific validator for UID
             Property::UID
+            | Property::Trigger
             | Property::Description
             | Property::Location
             | Property::Summary
@@ -376,14 +381,13 @@ impl Property {
 
             Property::Organizer | Property::Attendee | Property::Contact => todo!(),
 
-            Property::PercentComplete | Property::Priority | Property::Sequence => {
-                match splitted_line.1.to_string().parse() {
-                    Ok(integer) => ParserResult::Integer(integer),
-                    Err(_) => {
-                        return Err(ICSError::UnableToParseProperty(property_name.to_string()))
-                    }
-                }
-            }
+            Property::PercentComplete
+            | Property::Repeat
+            | Property::Priority
+            | Property::Sequence => match splitted_line.1.to_string().parse() {
+                Ok(integer) => ParserResult::Integer(integer),
+                Err(_) => return Err(ICSError::UnableToParseProperty(property_name.to_string())),
+            },
 
             Property::Status => ParserResult::Status(Status::from_str(splitted_line.1)?),
 
@@ -694,13 +698,13 @@ fn string_parsing_cases() {
     assert_eq!(result, Err(ICSError::UknownProperty("SDQ".to_string())));
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
 #[test]
 fn wrong_calscale() {
     //let (property, value) = Property::parse_property("CALSCALE:Wrong".to_string()).unwrap();
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
 #[test]
 fn cal_address_parsing_cases() {
     // let (property, value) =
@@ -838,20 +842,20 @@ fn date_time_parsing_cases() {
     assert_eq!(DateTime::<FixedOffset>::from(value), expected_date);
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
 #[test]
-fn duration_test_cases() {
+fn trigger_parsing_cases() {
     todo!();
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
 #[test]
-fn x_property_tests() {
+fn x_property_parsing_cases() {
     todo!();
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
 #[test]
-fn iana_token_property_tests() {
+fn iana_token_parse_cases() {
     todo!();
 }

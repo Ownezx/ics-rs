@@ -264,8 +264,17 @@ fn ics_extention_verification() {
     );
 }
 
+#[ignore = "Not implemented yet"]
 #[test]
 fn vtodo_example_1() {
+    let vcal_object =
+        VCalendar::load_vcal_from_file(Path::new("./tests/test_files/vtodo/example1.ics")).unwrap();
+
+    //let vtodo = vcal_object.vtodo.unwrap();
+}
+
+#[test]
+fn vtodo_example_2() {
     let vcal_object =
         VCalendar::load_vcal_from_file(Path::new("./tests/test_files/vtodo/example2.ics")).unwrap();
 
@@ -298,7 +307,16 @@ fn vtodo_example_1() {
     );
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
+#[test]
+fn vtodo_example_3() {
+    //let vcal_object =
+    //  VCalendar::load_vcal_from_file(Path::new("./tests/test_files/vtodo/example3.ics")).unwrap();
+
+    //let vtodo = vcal_object.vtodo.unwrap();
+}
+
+#[ignore = "Not implemented yet"]
 #[test]
 fn missing_properties() {
     // No VTODO,VEVENT,VCALENDAR
@@ -307,7 +325,7 @@ fn missing_properties() {
     todo!();
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
 #[test]
 fn duplicate_unique_properties() {
     // Two VTODO, VEVENT, VCALENDAR
@@ -315,13 +333,13 @@ fn duplicate_unique_properties() {
     todo!();
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
 #[test]
 fn x_components_tests() {
     todo!();
 }
 
-#[ignore]
+#[ignore = "Not implemented yet"]
 #[test]
 fn iana_token_components_tests() {
     todo!();

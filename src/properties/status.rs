@@ -68,7 +68,7 @@ impl std::str::FromStr for Status {
         match s {
             "NEEDS-ACTION" => Ok(Status::NeedsAction),
             "COMPLETED" => Ok(Status::Completed),
-            "IN-PROCESS" => Ok(Status::InProgress),
+            "IN-PROGRESS" => Ok(Status::InProgress),
             "TENTATIVE" => Ok(Status::Tentative),
             "CONFIRMED" => Ok(Status::Confirmed),
             "DRAFT" => Ok(Status::Draft),
@@ -86,7 +86,7 @@ impl From<Status> for String {
         match status {
             Status::NeedsAction => "NEEDS-ACTION".to_string(),
             Status::Completed => "COMPLETED".to_string(),
-            Status::InProgress => "IN-PROCESS".to_string(),
+            Status::InProgress => "IN-PROGRESS".to_string(),
             Status::Tentative => "TENTATIVE".to_string(),
             Status::Confirmed => "CONFIRMED".to_string(),
             Status::Draft => "DRAFT".to_string(),
@@ -146,7 +146,7 @@ fn from_str() {
         Status::NeedsAction
     );
     assert_eq!(Status::from_str("COMPLETED").unwrap(), Status::Completed);
-    assert_eq!(Status::from_str("IN-PROCESS").unwrap(), Status::InProgress);
+    assert_eq!(Status::from_str("IN-PROGRESS").unwrap(), Status::InProgress);
     assert_eq!(Status::from_str("TENTATIVE").unwrap(), Status::Tentative);
     assert_eq!(Status::from_str("CONFIRMED").unwrap(), Status::Confirmed);
     assert_eq!(Status::from_str("DRAFT").unwrap(), Status::Draft);
@@ -158,7 +158,7 @@ fn from_str() {
 fn to_str() {
     assert_eq!(String::from(Status::NeedsAction), "NEEDS-ACTION");
     assert_eq!(String::from(Status::Completed), "COMPLETED");
-    assert_eq!(String::from(Status::InProgress), "IN-PROCESS");
+    assert_eq!(String::from(Status::InProgress), "IN-PROGRESS");
     assert_eq!(String::from(Status::Tentative), "TENTATIVE");
     assert_eq!(String::from(Status::Confirmed), "CONFIRMED");
     assert_eq!(String::from(Status::Draft), "DRAFT");
